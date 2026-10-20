@@ -1,0 +1,187 @@
+/* KING LUDO — dark-grey theme (scoped: every class starts with lu-) */
+.lu-root {
+  --lu-bg: #1e1f22; --lu-panel: #2a2c30; --lu-panel2: #33363b; --lu-border: #44474d;
+  --lu-text: #f1f2f4; --lu-muted: #9aa0a8; --lu-blue: #2f7bff; --lu-blue-dark: #1f5fd1;
+  --lu-gold: #f5c542; --lu-green: #34c759; --lu-red: #ef5350;
+  background: var(--lu-bg); color: var(--lu-text); min-height: 100vh; display: flex; flex-direction: column;
+  padding: 10px 12px calc(88px + env(safe-area-inset-bottom)); gap: 10px; font-family: var(--font-body);
+}
+.lu-root.lu-room { padding-bottom: 16px; }
+.lu-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lu-btn-back, .lu-chip { background: var(--lu-panel); border: 1px solid var(--lu-border); color: var(--lu-text); border-radius: 12px; padding: 8px 12px; font-weight: 700; font-size: 14px; }
+.lu-btn-back { cursor: pointer; }
+.lu-chip { display: flex; gap: 6px; align-items: center; color: var(--lu-gold); }
+.lu-brand { text-align: center; font-weight: 900; font-size: 26px; letter-spacing: 1px; color: var(--lu-gold); line-height: 1; }
+.lu-brand small { display: block; color: var(--lu-text); font-size: 13px; letter-spacing: 6px; margin-top: 2px; }
+.lu-conn { font-size: 11px; text-align: center; color: var(--lu-muted); }
+.lu-conn.bad { color: var(--lu-red); }
+.lu-panel { background: var(--lu-panel); border: 1px solid var(--lu-border); border-radius: 14px; padding: 10px; }
+.lu-title { color: var(--lu-gold); font-weight: 800; text-align: center; margin: 0 0 8px; font-size: 15px; }
+.lu-muted { color: var(--lu-muted); font-size: 12px; }
+.lu-resume { background: #1f3b2a; border: 1px solid var(--lu-green); border-radius: 12px; padding: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
+
+.lu-rooms { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+.lu-card { display: flex; align-items: center; gap: 10px; background: var(--lu-panel2); border: 1px solid var(--lu-border); border-radius: 12px; padding: 8px 10px; }
+.lu-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--lu-panel); border: 2px solid var(--lu-gold); display: grid; place-items: center; font-weight: 800; color: var(--lu-gold); flex-shrink: 0; }
+.lu-card .who { flex: 1; min-width: 0; }
+.lu-card .who b { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-card .fee { color: var(--lu-green); font-weight: 700; font-size: 13px; }
+.lu-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+.lu-tag { font-size: 10px; border: 1px solid var(--lu-border); border-radius: 8px; padding: 1px 6px; color: var(--lu-muted); }
+.lu-dots { display: flex; gap: 3px; }
+.lu-dot { width: 9px; height: 9px; border-radius: 50%; background: #55595f; }
+.lu-dot.on { background: var(--lu-green); }
+.lu-timer { background: #1d2a20; border: 1px solid var(--lu-green); color: var(--lu-green); border-radius: 10px; padding: 3px 8px; font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; }
+.lu-prize { color: var(--lu-gold); font-weight: 800; font-size: 14px; text-align: center; min-width: 64px; }
+.lu-prize small { display: block; color: var(--lu-muted); font-size: 9px; font-weight: 600; }
+.lu-join { background: var(--lu-blue); border: 0; color: #fff; font-weight: 800; border-radius: 10px; padding: 9px 14px; cursor: pointer; }
+.lu-join:disabled { opacity: .5; }
+.lu-empty { text-align: center; color: var(--lu-muted); padding: 16px 6px; font-size: 13px; }
+
+.lu-seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--lu-panel); border: 1px solid var(--lu-border); border-radius: 14px; padding: 4px; gap: 4px; }
+.lu-seg button { background: transparent; border: 1px solid transparent; color: var(--lu-text); font-weight: 800; font-size: 16px; padding: 11px; border-radius: 10px; cursor: pointer; }
+.lu-seg button.on { background: var(--lu-blue); border-color: #8db4ff; }
+.lu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.lu-opt { position: relative; background: var(--lu-panel2); border: 1px solid var(--lu-border); color: var(--lu-text); border-radius: 10px; padding: 11px 0; font-weight: 800; font-size: 14px; cursor: pointer; }
+.lu-opt.on { background: var(--lu-blue); border: 2px solid #8db4ff; }
+.lu-opt.on::after { content: '✓'; position: absolute; top: -7px; right: -5px; background: var(--lu-green); color: #fff; width: 18px; height: 18px; font-size: 11px; border-radius: 50%; display: grid; place-items: center; }
+.lu-crowns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.lu-crowns .lu-opt { color: var(--lu-gold); font-size: 17px; }
+.lu-crowns .lu-opt.on { color: #fff; }
+
+.lu-bottom { position: fixed; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, var(--lu-bg) 35%); display: flex; gap: 8px; z-index: 5; }
+.lu-play { flex: 1; background: var(--lu-blue); border: 2px solid var(--lu-gold); color: #fff; font-weight: 900; font-size: 19px; border-radius: 16px; padding: 14px; cursor: pointer; letter-spacing: 1px; }
+.lu-create { background: var(--lu-panel); border: 1px solid var(--lu-border); color: var(--lu-text); font-weight: 700; border-radius: 16px; padding: 0 14px; cursor: pointer; font-size: 13px; }
+.lu-play:disabled, .lu-create:disabled { opacity: .55; }
+.lu-toast { position: fixed; left: 12px; right: 12px; top: 12px; max-width: 456px; margin: 0 auto; background: #4a2325; border: 1px solid var(--lu-red); color: #ffd7d5; padding: 10px 12px; border-radius: 12px; z-index: 30; font-size: 13px; font-weight: 600; }
+.lu-toast.ok { background: #1f3b2a; border-color: var(--lu-green); color: #d6ffe2; }
+
+/* room */
+.lu-info { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--lu-panel); border: 1px solid var(--lu-border); border-radius: 12px; padding: 8px 12px; font-size: 13px; }
+.lu-info b { color: var(--lu-gold); }
+.lu-info .id { color: #6ab0ff; font-weight: 800; }
+.lu-info button { background: transparent; border: 0; color: var(--lu-muted); font-size: 12px; cursor: pointer; }
+.lu-players { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lu-pl { display: flex; align-items: center; gap: 8px; background: var(--lu-panel); border: 2px solid var(--lu-border); border-radius: 40px; padding: 5px 8px 5px 5px; min-height: 52px; }
+.lu-pl.turn { border-color: var(--lu-green); box-shadow: 0 0 0 2px rgba(52,199,89,.25); }
+.lu-pl.out { opacity: .45; }
+.lu-pl.empty { opacity: .35; }
+.lu-pl .av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; color: #fff; flex-shrink: 0; border: 2px solid rgba(255,255,255,.7); }
+.lu-pl .nm { flex: 1; min-width: 0; font-size: 12px; line-height: 1.2; }
+.lu-pl .nm b { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-pl .st { font-size: 10px; color: var(--lu-muted); }
+.lu-pl .st.on { color: var(--lu-green); }
+.lu-pl .st.warn { color: var(--lu-gold); }
+.lu-pl .die { flex-shrink: 0; }
+.lu-die { width: 46px; height: 46px; background: #fff; border-radius: 10px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 6px; gap: 1px; border: 0; box-shadow: 0 2px 0 #b9bcc2; }
+.lu-die i { width: 7px; height: 7px; background: #222; border-radius: 50%; place-self: center; opacity: 0; }
+.lu-die i.p { opacity: 1; }
+.lu-die.mine { cursor: pointer; animation: lu-bounce 1s infinite; box-shadow: 0 0 0 3px var(--lu-green), 0 2px 0 #b9bcc2; }
+.lu-die.rolling { animation: lu-shake .35s infinite; }
+.lu-die.blank { background: rgba(255,255,255,.55); box-shadow: none; }
+.lu-clock { font-size: 11px; font-weight: 800; color: var(--lu-green); font-variant-numeric: tabular-nums; }
+.lu-clock.low { color: var(--lu-red); }
+.lu-boardwrap { background: #17181a; border: 1px solid var(--lu-border); border-radius: 14px; padding: 6px; }
+.lu-board { width: 100%; height: auto; display: block; touch-action: manipulation; }
+
+.lu-pulse { animation: lu-pulse 0.9s infinite; transform-origin: center; }
+.lu-status { text-align: center; font-weight: 800; font-size: 14px; min-height: 20px; }
+.lu-wait { text-align: center; padding: 18px 10px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.lu-big { font-size: 44px; font-weight: 900; color: var(--lu-green); font-variant-numeric: tabular-nums; }
+.lu-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.lu-ghost { background: transparent; border: 1px solid var(--lu-border); color: var(--lu-text); border-radius: 12px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+.lu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); display: grid; place-items: center; z-index: 20; padding: 18px; }
+.lu-modal { background: var(--lu-panel); border: 2px solid var(--lu-gold); border-radius: 18px; padding: 22px 18px; text-align: center; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+.lu-modal h2 { margin: 0; color: var(--lu-gold); }
+.lu-modal .amt { font-size: 30px; font-weight: 900; color: var(--lu-green); }
+@keyframes lu-bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes lu-shake { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } 100% { transform: rotate(-8deg); } }
+@keyframes lu-pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* ===== Game room: matches the supplied design (navy/teal background, cyan board frame) ===== */
+.lu-root.lu-room {
+  --lu-bg: #112839; --lu-panel: #1b364b; --lu-panel2: #1f4058; --lu-border: #2f6385;
+  background: linear-gradient(180deg, #1b364b 0%, #112839 55%, #0f2635 100%);
+  padding: 8px 10px 14px; gap: 8px;
+}
+.lu-room-top { display: flex; align-items: center; gap: 8px; background: rgba(8, 24, 40, .85); border: 1px solid #3b86b3; border-radius: 14px; padding: 6px 8px; }
+.lu-room-top .lu-btn-back { background: transparent; border: 0; padding: 6px 8px; font-size: 15px; }
+.lu-logo { flex: 1; text-align: center; font-weight: 900; font-size: 22px; letter-spacing: 1px; white-space: nowrap; }
+.lu-logo .k { background: linear-gradient(#ffe27a, #f2a810); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lu-logo .l { color: #fff; text-shadow: 0 2px 0 #0a3a6a, 0 0 6px rgba(120,200,255,.6); }
+.lu-logo .crown { font-size: 18px; }
+.lu-sq { width: 44px; height: 38px; border: 0; border-radius: 10px; background: linear-gradient(#35a8ff, #1479e6); color: #fff; font-size: 20px; font-weight: 800; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.lu-room-sub { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(8, 24, 40, .85); border: 1px solid #3b86b3; border-radius: 12px; padding: 6px 10px; overflow: hidden; }
+.lu-room-sub .gid { color: #38d6f5; font-weight: 800; font-size: 15px; }
+.lu-room-sub .strip { display: flex; gap: 14px; align-items: center; background: #0aa84a; border-radius: 8px 4px 8px 4px; padding: 4px 12px; color: #fff; font-weight: 900; font-size: 16px; font-variant-numeric: tabular-nums; }
+.lu-players2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lu-pl2 { position: relative; display: flex; align-items: center; min-width: 0; height: 58px; border-radius: 40px; background: var(--cd, #1b364b); border: 3px solid var(--c, #888); padding: 0 4px 0 0; gap: 6px; }
+.lu-pl2.turn { box-shadow: 0 0 0 3px rgba(255,255,255,.55), 0 0 14px 2px var(--c); }
+.lu-pl2.out { opacity: .4; }
+.lu-pl2 .av { position: relative; flex-shrink: 0; width: 56px; height: 56px; margin: -6px 0 -6px -3px; border-radius: 50%; border: 4px solid var(--c); background: #e9e9e9; overflow: hidden; }
+.lu-pl2 .av .lu-avatar-svg { width: 100%; height: 100%; display: block; background: #f4f4f4; }
+.lu-pl2 .av .bet { position: absolute; right: 2px; bottom: 0; font-size: 11px; font-weight: 900; color: #111; background: rgba(255,255,255,.88); border-radius: 8px; padding: 0 4px; line-height: 15px; }
+.lu-pl2 .nm { flex: 1; min-width: 0; line-height: 1.15; }
+.lu-pl2 .nm b { display: block; color: #fff; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-pl2 .st { display: block; font-size: 10px; color: #b8c7d6; }
+.lu-pl2 .st.on { color: #5dff8f; }
+.lu-pl2 .st.warn { color: #ffd54a; }
+.lu-pl2 .dice-ring { position: relative; flex-shrink: 0; width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--c); background: rgba(0,0,0,.25); display: grid; place-items: center; }
+.lu-pl2 .dice-ring .lu-die { width: 36px; height: 36px; padding: 4px; border-radius: 8px; }
+.lu-pl2 .dice-ring .lu-die i { width: 5px; height: 5px; }
+.lu-pl2 .dice-ring .clock { position: absolute; right: -4px; top: -8px; min-width: 20px; text-align: center; background: #0aa84a; color: #fff; font-size: 11px; font-weight: 900; border-radius: 10px; padding: 1px 4px; }
+.lu-pl2 .dice-ring .clock.low { background: #e5333a; }
+.lu-room .lu-boardwrap { background: #01374c; border: 3px solid #00a3c7; border-radius: 16px; padding: 6px; box-shadow: 0 0 14px rgba(0, 190, 230, .45), inset 0 0 8px rgba(0,0,0,.4); }
+.lu-room .lu-board { border-radius: 8px; }
+.lu-room .lu-status { color: #fff; }
+.lu-room .lu-muted { color: #9fb7cb; }
+.lu-room .lu-panel, .lu-room .lu-pl { background: #1b364b; border-color: #2f6385; }
+
+.lu-pl2 { margin-left: 3px; }
+.lu-players2 { padding: 0 2px; }
+
+/* dice tumbling + big result die over the board, walking tokens */
+.lu-boardwrap { position: relative; }
+.lu-bigdie { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; padding: 10px; border-radius: 24px; background: rgba(0,0,0,.45); border: 4px solid var(--c, #fff); box-shadow: 0 0 24px var(--c, #fff); }
+.lu-bigdie .lu-die { width: 84px; height: 84px; padding: 12px; border-radius: 16px; }
+.lu-bigdie .lu-die i { width: 15px; height: 15px; }
+.lu-die.rolling { animation: lu-tumble .5s linear infinite; }
+@keyframes lu-tumble { 0% { transform: rotate(0) scale(1); } 25% { transform: rotate(90deg) scale(1.12); } 50% { transform: rotate(180deg) scale(1); } 75% { transform: rotate(270deg) scale(1.12); } 100% { transform: rotate(360deg) scale(1); } }
+.lu-token { transition: transform .18s linear; }
+
+/* lobby room cards (all waiting rooms of every mode are listed) */
+.lu-rooms { max-height: 52vh; }
+.lu-rcard { display: flex; align-items: center; gap: 8px; background: #1c2333; border: 1px solid #2f3a50; border-radius: 16px; padding: 10px 10px 10px 12px; }
+.lu-rl { flex: 1; min-width: 0; }
+.lu-rl .r1 { display: flex; align-items: center; gap: 8px; }
+.lu-rl .r1 b { color: #9aa3b5; font-size: 16px; font-weight: 800; white-space: nowrap; }
+.lu-dots2 { display: flex; gap: 4px; }
+.lu-dots2 .d { width: 11px; height: 11px; border-radius: 50%; background: #3b82f6; }
+.lu-dots2 .d.on { background: #10b981; }
+.lu-pill { background: #12392f; border: 1px solid #1f8a68; color: #5eead4; border-radius: 10px; padding: 2px 8px; font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lu-pill.low { background: #3a2f12; border-color: #b8892a; color: #fbbf24; }
+.lu-rl .r2 { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
+.lu-rl .fee { color: #22c55e; font-weight: 800; font-size: 15px; }
+.lu-rl .cnt { color: #6b7488; font-size: 15px; }
+.lu-rl .mode { color: #6b7488; font-size: 11px; border: 1px solid #3a455c; border-radius: 6px; padding: 0 5px; }
+.lu-rr { text-align: center; flex-shrink: 0; }
+.lu-rr .crowns { display: flex; gap: 3px; justify-content: center; min-height: 18px; }
+.lu-rr .prize { color: #f5b81c; font-weight: 800; font-size: 15px; margin-top: 2px; white-space: nowrap; }
+.lu-join2 { flex-shrink: 0; background: #3b82f6; color: #fff; border: 0; border-radius: 12px; font-weight: 800; font-size: 17px; padding: 16px 20px; cursor: pointer; }
+.lu-join2.mine { background: #10b981; }
+.lu-join2:disabled { opacity: .5; }
+
+/* winner celebration */
+.lu-cool { font-size: 84px; line-height: 1; animation: lu-pop .9s ease-out both, lu-bounce 1.2s .9s infinite; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+@keyframes lu-pop { 0% { transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.3) rotate(10deg); } 100% { transform: scale(1) rotate(0); } }
+
+/* emoji shown inside a player's own yard (😭 token captured, 😎 token home) */
+.lu-fx { position: absolute; inset: 9px; pointer-events: none; z-index: 7; }
+.lu-emo { position: absolute; font-size: min(15vw, 70px); line-height: 1; transform: translate(-50%, -50%); animation: lu-emo 2.4s ease-out both; filter: drop-shadow(0 3px 6px rgba(0,0,0,.55)); }
+@keyframes lu-emo {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(-25deg); opacity: 0; }
+  14%  { transform: translate(-50%, -50%) scale(1.4) rotate(8deg); opacity: 1; }
+  28%  { transform: translate(-50%, -50%) scale(1) rotate(0); }
+  80%  { transform: translate(-50%, -58%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -78%) scale(.9); opacity: 0; }
+}

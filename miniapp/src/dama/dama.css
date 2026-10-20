@@ -1,0 +1,51 @@
+/* KING DAMA — scoped styles (every class starts with dm-) */
+.dm-root { --bg:#1b1410; --panel:#2a211a; --panel2:#35291f; --border:#4c3b2c; --text:#f4ece3; --muted:#b09d8b; --gold:#f5c542; --green:#34c759; --red:#ef5350;
+  --sq-dk:#8b5a2b; --sq-lt:#f0d9b5; background: var(--bg); color: var(--text); min-height: 100vh; display:flex; flex-direction:column; gap:10px;
+  padding:10px 12px calc(88px + env(safe-area-inset-bottom)); font-family: var(--font-body); }
+.dm-root.dm-room { padding-bottom:16px; }
+.dm-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.dm-back, .dm-chip { background:var(--panel); border:1px solid var(--border); color:var(--text); border-radius:12px; padding:8px 12px; font-weight:700; font-size:14px; }
+.dm-chip { display:flex; gap:6px; align-items:center; color:var(--gold); }
+.dm-brand { display:flex; align-items:center; gap:6px; font-weight:900; color:var(--gold); font-size:18px; letter-spacing:1px; }
+.dm-conn { font-size:11px; text-align:center; color:var(--muted); } .dm-conn.bad { color:var(--red); }
+.dm-panel { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; }
+.dm-panel.center, .center { text-align:center; align-items:center; }
+.dm-title { color:var(--gold); font-weight:800; text-align:center; margin:0; font-size:15px; }
+.dm-muted { color:var(--muted); font-size:12px; }
+.dm-stakes { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.dm-stake { background:var(--panel2); border:2px solid var(--border); color:var(--text); border-radius:12px; padding:10px 4px; font-weight:800; font-size:16px; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+.dm-stake small { font-size:10px; color:var(--muted); font-weight:600; }
+.dm-stake.on { border-color:var(--gold); background:#4a3a1c; color:var(--gold); }
+.dm-payout { background:var(--panel2); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:6px; width:100%; box-sizing:border-box; }
+.dm-payout > div { display:flex; justify-content:space-between; font-size:13px; } .dm-payout .win { color:var(--green); font-weight:800; font-size:15px; }
+.dm-btn { background:var(--gold); color:#2b1d00; border:none; border-radius:12px; padding:13px; font-weight:900; font-size:15px; cursor:pointer; width:100%; }
+.dm-btn:disabled { opacity:.45; cursor:not-allowed; } .dm-btn.danger { background:var(--red); color:#fff; } .dm-btn.small { width:auto; padding:8px 14px; font-size:13px; }
+.dm-link { background:none; border:none; color:var(--muted); text-decoration:underline; font-size:13px; cursor:pointer; }
+.dm-rules { margin:0; padding-left:18px; font-size:12px; color:var(--muted); display:flex; flex-direction:column; gap:4px; }
+.dm-resume { background:#1f3b2a; border:1px solid var(--green); border-radius:12px; padding:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; }
+.dm-hist { border-top:1px solid var(--border); padding-top:8px; font-size:13px; } .dm-hist b.win { color:var(--green); } .dm-hist b.loss { color:var(--red); }
+.dm-toast { position:fixed; top:12px; left:50%; transform:translateX(-50%); background:#5a1f1f; color:#fff; padding:10px 16px; border-radius:12px; z-index:50; font-size:13px; max-width:90vw; }
+.dm-toast.ok { background:#1f5a2b; }
+.dm-wait .dm-bigtimer { font-size:48px; font-weight:900; color:var(--gold); font-variant-numeric:tabular-nums; }
+.dm-spinner { width:46px; height:46px; border:5px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:dmspin 1s linear infinite; }
+@keyframes dmspin { to { transform:rotate(360deg); } }
+.dm-player { display:flex; justify-content:space-between; background:var(--panel); border:2px solid var(--border); border-radius:12px; padding:8px 12px; font-weight:700; font-size:14px; }
+.dm-player.active { border-color:var(--gold); } .dm-player em { color:var(--red); font-style:normal; font-size:11px; }
+.dm-timer { background:var(--panel); border-radius:12px; padding:8px 12px; display:flex; flex-direction:column; gap:6px; font-size:14px; text-align:center; }
+.dm-bar { height:10px; background:var(--panel2); border-radius:6px; overflow:hidden; } .dm-bar i { display:block; height:100%; background:var(--green); transition:width .25s linear; }
+.dm-timer.low .dm-bar i { background:var(--red); } .dm-timer.low b { color:var(--red); animation:dmpulse .6s infinite alternate; }
+@keyframes dmpulse { to { opacity:.35; } }
+.dm-must { background:#5a3a10; border:1px solid var(--gold); color:var(--gold); border-radius:10px; padding:6px 10px; text-align:center; font-weight:800; font-size:13px; }
+.dm-must.warn { background:#4a1f1f; border-color:var(--red); color:#ffb4b0; }
+.dm-board { display:grid; grid-template-columns:repeat(8,1fr); width:100%; max-width:min(100vw - 24px, 480px); aspect-ratio:1; margin:0 auto; border:4px solid #5b3a1a; border-radius:8px; overflow:hidden; }
+.dm-sq { position:relative; padding:0; border:none; display:grid; place-items:center; cursor:pointer; }
+.dm-sq.dk { background:var(--sq-dk); } .dm-sq.lt { background:var(--sq-lt); cursor:default; }
+.dm-sq.sel { box-shadow:inset 0 0 0 3px var(--gold); } .dm-sq.tgt { background:#a8732f; }
+.dm-dot { width:30%; height:30%; border-radius:50%; background:rgba(52,199,89,.85); }
+.dm-pc { width:80%; height:80%; border-radius:50%; display:grid; place-items:center; font-size:clamp(14px,5vw,24px); transition:transform .15s; box-shadow:0 3px 4px rgba(0,0,0,.5); }
+.dm-pc.w { background:radial-gradient(circle at 35% 30%, #fff, #d9d2c5); color:#a27b00; border:2px solid #bdb6a8; }
+.dm-pc.b { background:radial-gradient(circle at 35% 30%, #555, #1a1a1a); color:var(--gold); border:2px solid #000; }
+.dm-pc.can { outline:3px solid var(--green); animation:dmglow 1s infinite alternate; } .dm-pc.dead { opacity:.35; }
+@keyframes dmglow { to { transform:scale(1.07); } }
+.dm-confirm { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; font-size:13px; }
+.dm-trophy { font-size:56px; } .dm-result h2 { margin:0; }
