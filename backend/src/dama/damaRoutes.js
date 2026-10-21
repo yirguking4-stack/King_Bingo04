@@ -68,6 +68,33 @@ router.get('/history', async (req, res) => {
   }
 });
 
+// open rooms for the lobby list (+ my own active rooms)
+router.get('/rooms', async (req, res) => {
+  try {
+    res.json({ ...(await manager.lobbyRooms()), mine: await manager.myActive(req.user.id) });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// create a new open room with my stake
+router.post('/rooms', limit, async (req, res) => {
+  try {
+    res.json(await manager.createRoom(req.user.id, { bet: (req.body || {}).bet }));
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
+// join a specific open room (the second player starts the game)
+router.post('/rooms/:code/join', limit, async (req, res) => {
+  try {
+    res.json(await manager.joinRoom(req.user.id, String(req.params.code).toUpperCase()));
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
 router.get('/rooms/:code', async (req, res) => {
   try {
     const state = await manager.publicState(String(req.params.code).toUpperCase());

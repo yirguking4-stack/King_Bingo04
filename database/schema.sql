@@ -82,7 +82,8 @@ CREATE TABLE stake_tiers (
     entry_credits       NUMERIC(10,2) NOT NULL UNIQUE,
     commission_percent  NUMERIC(5,2) NOT NULL,      -- platform commission taken from virtual pot
     min_players         INT NOT NULL DEFAULT 2,
-    max_players         INT NOT NULL DEFAULT 100
+    max_players         INT NOT NULL DEFAULT 100,
+    game_type           VARCHAR(20) NOT NULL DEFAULT 'BINGO'
 );
 
 CREATE TABLE game_rooms (

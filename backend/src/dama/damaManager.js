@@ -47,6 +47,8 @@ class DamaManager {
     this.roomSockets = new Map();
     this.ready = null;
     this.sweeper = null;
+    this.lobbySockets = new Set();
+    this.lobbyTimer = null;
   }
 
   // ------------------------------------------------------------------ settings (admin_settings table)
@@ -229,12 +231,15 @@ class DamaManager {
       );
       if (open.rowCount) {
         const room = open.rows[0];
-        await this.charge(client, userId, bet, room.room_code);
-        await client.query('INSERT INTO dama_players (room_id, user_id, stake_paid) VALUES ($1, $2, $3)', [room.id, userId, bet]);
-        await this.startGame(client, room, cfg);
-        code = room.room_code;
-        started = true;
-        return;
+        const seated = await client.query('SELECT COUNT(*)::int AS c FROM dama_players WHERE room_id = $1', [room.id]);
+        if (seated.rows[0].c < 2) {
+          await this.charge(client, userId, bet, room.room_code);
+          await client.query('INSERT INTO dama_players (room_id, user_id, stake_paid) VALUES ($1, $2, $3)', [room.id, userId, bet]);
+          await this.startGame(client, room, cfg);
+          code = room.room_code;
+          started = true;
+          return;
+        }
       }
       for (let attempt = 0; attempt < 5; attempt += 1) {
         const c = genCode();
@@ -253,6 +258,123 @@ class DamaManager {
     });
     await this.afterChange(code);
     return { code, started };
+  }
+
+  // ------------------------------------------------------------------ lobby (open rooms, like King Ludo)
+  /** A player may sit in only ONE waiting/running Dama room at a time (their stake is reserved there). */
+  async assertFree(client, userId, targetCode) {
+    const mine = await client.query(
+      `SELECT r.room_code, r.status FROM dama_rooms r JOIN dama_players p ON p.room_id = r.id
+       WHERE p.user_id = $1 AND p.status = 'ACTIVE' AND r.status IN ('WAITING','IN_PROGRESS') LIMIT 1`,
+      [userId]
+    );
+    if (!mine.rowCount) return;
+    if (targetCode && mine.rows[0].room_code === targetCode) throw new DamaError('ALREADY_JOINED', 'አስቀድመው በዚህ ክፍል ውስጥ ገብተዋል');
+    throw new DamaError('ALREADY_IN_GAME', mine.rows[0].status === 'WAITING' ? 'አስቀድመው ሌላ ክፍል ውስጥ እየጠበቁ ነው። መጀመሪያ ክፍሉን ይሰርዙ ወይም ይክፈቱት።' : 'በሂደት ላይ ያለ ጨዋታ አለዎት');
+  }
+
+  /** Create a NEW open room with my stake (never auto-joins another room). */
+  async createRoom(userId, { bet }) {
+    const cfg = await this.settings();
+    bet = Number(bet);
+    if (!cfg.enabled) throw new DamaError('DISABLED', 'King Dama ለጊዜው ተዘግቷል');
+    if (!Number.isInteger(bet) || !cfg.bets.includes(bet)) throw new DamaError('BAD_INPUT', 'የውርርድ መጠን ልክ አይደለም');
+    let code;
+    await withTransaction(async (client) => {
+      await client.query('SELECT 1 FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
+      await this.assertFree(client, userId);
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const c = genCode();
+        const ins = await client.query(
+          `INSERT INTO dama_rooms (room_code, creator_id, bet_amount, wait_deadline) VALUES ($1, $2, $3, $4) ON CONFLICT (room_code) DO NOTHING RETURNING *`,
+          [c, userId, bet, new Date(Date.now() + cfg.waitSeconds * 1000)]
+        );
+        if (ins.rowCount) {
+          await this.charge(client, userId, bet, c);
+          await client.query('INSERT INTO dama_players (room_id, user_id, stake_paid) VALUES ($1, $2, $3)', [ins.rows[0].id, userId, bet]);
+          code = c;
+          return;
+        }
+      }
+      throw new DamaError('BUSY', 'እባክዎ እንደገና ይሞክሩ');
+    });
+    await this.afterChange(code);
+    return { code, started: false };
+  }
+
+  /** Join a specific open room from the lobby. The 2nd player starts the game immediately. */
+  async joinRoom(userId, code) {
+    const cfg = await this.settings();
+    if (!cfg.enabled) throw new DamaError('DISABLED', 'King Dama ለጊዜው ተዘግቷል');
+    let started = false;
+    await withTransaction(async (client) => {
+      await client.query('SELECT 1 FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
+      await this.assertFree(client, userId, code);
+      const r = await client.query('SELECT * FROM dama_rooms WHERE room_code = $1 FOR UPDATE', [code]);
+      if (!r.rowCount) throw new DamaError('NOT_FOUND', 'ክፍሉ አልተገኘም');
+      const room = r.rows[0];
+      if (room.status !== 'WAITING' || !room.wait_deadline || new Date(room.wait_deadline).getTime() <= Date.now()) {
+        throw new DamaError('CLOSED', 'ይህ ክፍል ከአሁን በኋላ ተጫዋች አይቀበልም');
+      }
+      const seated = await client.query('SELECT user_id FROM dama_players WHERE room_id = $1', [room.id]);
+      if (seated.rows.some((x) => String(x.user_id) === String(userId))) throw new DamaError('ALREADY_JOINED', 'አስቀድመው ገብተዋል');
+      if (seated.rowCount >= 2) throw new DamaError('FULL', 'ክፍሉ ሞልቷል');
+      const bet = Number(room.bet_amount);
+      await this.charge(client, userId, bet, code);
+      await client.query('INSERT INTO dama_players (room_id, user_id, stake_paid) VALUES ($1, $2, $3)', [room.id, userId, bet]);
+      await this.startGame(client, room, cfg);
+      started = true;
+    });
+    await this.afterChange(code);
+    return { code, started };
+  }
+
+  /** Open (WAITING) rooms for the lobby list + how many games are running right now. */
+  async lobbyRooms() {
+    const [res, live] = await Promise.all([
+      query(
+        `SELECT r.room_code, r.bet_amount, r.wait_deadline,
+                COALESCE(json_agg(json_build_object('name', u.username, 'userId5d', u.user_id_5d) ORDER BY p.joined_at, p.id) FILTER (WHERE u.id IS NOT NULL), '[]') AS players
+         FROM dama_rooms r
+         LEFT JOIN dama_players p ON p.room_id = r.id
+         LEFT JOIN users u ON u.id = p.user_id
+         WHERE r.status = 'WAITING' AND r.wait_deadline > now()
+         GROUP BY r.id ORDER BY r.bet_amount ASC, r.created_at ASC LIMIT 200`
+      ),
+      query(`SELECT COUNT(*)::int AS c FROM dama_rooms WHERE status = 'IN_PROGRESS'`),
+    ]);
+    return {
+      serverNow: Date.now(),
+      playing: live.rows[0].c,
+      rooms: res.rows.map((r) => {
+        const bet = Number(r.bet_amount);
+        const { pot, prize } = payoutFor(bet);
+        return {
+          code: r.room_code,
+          bet,
+          pot,
+          prize,
+          capacity: 2,
+          waitDeadline: new Date(r.wait_deadline).getTime(),
+          players: r.players.map((x) => ({ name: `@${maskUsername(x.name)}`, userId5d: x.userId5d })),
+          status: 'WAITING',
+        };
+      }),
+    };
+  }
+
+  pushLobby() {
+    if (this.lobbyTimer || !this.lobbySockets.size) return;
+    this.lobbyTimer = setTimeout(async () => {
+      this.lobbyTimer = null;
+      try {
+        const data = await this.lobbyRooms();
+        for (const ws of this.lobbySockets) this.send(ws, 'dama_lobby', data);
+      } catch (e) {
+        console.error('[dama] lobby push', e.message);
+      }
+    }, 250);
+    this.lobbyTimer.unref();
   }
 
   /** Cancel Search: only while WAITING. The reserved stake goes back, no commission. */
@@ -567,6 +689,7 @@ class DamaManager {
     const { room } = loaded;
     if (room.status === 'WAITING' || room.status === 'IN_PROGRESS') this.schedule(code, this.deadlineOf(room));
     else this.schedule(code, null);
+    this.pushLobby();
     const set = this.roomSockets.get(code);
     if (set && set.size) {
       const payload = { state: this.buildState(room, loaded.players, await this.settings()), events };
@@ -591,6 +714,16 @@ class DamaManager {
       const now = Date.now();
       if (now - (ws.damaLast || 0) < ACTION_GAP_MS && ['dama_move', 'dama_resign'].includes(msg.type)) throw new DamaError('RATE', 'ቀስ ብለው ይጫኑ');
       ws.damaLast = now;
+      if (msg.type === 'dama_lobby') {
+        await this.init();
+        this.lobbySockets.add(ws);
+        this.send(ws, 'dama_lobby', await this.lobbyRooms());
+        return true;
+      }
+      if (msg.type === 'dama_lobby_leave') {
+        this.lobbySockets.delete(ws);
+        return true;
+      }
       const p = msg.payload || {};
       const code = typeof p.code === 'string' ? p.code.toUpperCase().slice(0, 10) : null;
       if (!code) throw new DamaError('BAD_INPUT', 'Room code ያስፈልጋል');
@@ -627,6 +760,7 @@ class DamaManager {
   }
 
   handleSocketClose(ws) {
+    this.lobbySockets.delete(ws);
     if (ws.damaRooms) for (const code of [...ws.damaRooms]) this.leaveRoomSocket(ws, code);
   }
 

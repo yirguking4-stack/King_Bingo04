@@ -70,6 +70,9 @@ export const api = {
   damaActive: () => request('/api/dama/active'),
   damaHistory: () => request('/api/dama/history'),
   damaRoom: (code) => request(`/api/dama/rooms/${code}`),
+  damaRooms: () => request('/api/dama/rooms'),
+  damaCreate: (body) => request('/api/dama/rooms', { method: 'POST', body: JSON.stringify(body) }),
+  damaJoin: (code) => request(`/api/dama/rooms/${code}/join`, { method: 'POST' }),
   damaPlay: (body) => request('/api/dama/play', { method: 'POST', body: JSON.stringify(body) }),
   damaCancel: (code) => request(`/api/dama/rooms/${code}/cancel`, { method: 'POST' }),
 };

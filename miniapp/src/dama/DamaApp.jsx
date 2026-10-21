@@ -23,6 +23,7 @@ export default function DamaApp({ profile, onExit, onWalletRefresh }) {
   const [view, setView] = useState({ name: 'lobby', code: null });
   const [cfg, setCfg] = useState(null);
   const [mine, setMine] = useState([]);
+  const [lobby, setLobby] = useState(null);
   const [history, setHistory] = useState(null);
   const [room, setRoom] = useState(null);
   const [toast, setToast] = useState(null);
@@ -40,17 +41,23 @@ export default function DamaApp({ profile, onExit, onWalletRefresh }) {
 
   const loadLobby = useCallback(async () => {
     try {
-      const [c, a, h] = await Promise.all([api.damaConfig(), api.damaActive(), api.damaHistory()]);
+      const [c, d, h] = await Promise.all([api.damaConfig(), api.damaRooms(), api.damaHistory()]);
       setCfg(c);
-      setMine(a.mine || []);
+      syncClock(d.serverNow);
+      setLobby({ rooms: d.rooms || [], playing: d.playing || 0 });
+      setMine(d.mine || []);
       setHistory(h.items || []);
     } catch (e) {
       say(e.message);
     }
-  }, [say]);
+  }, [say]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { connected, send } = useGameSocket((msg) => {
-    if (msg.type === 'dama_state') {
+    if (msg.type === 'dama_lobby') {
+      syncClock(msg.payload.serverNow);
+      setLobby({ rooms: msg.payload.rooms || [], playing: msg.payload.playing || 0 });
+      api.damaActive().then((a) => setMine(a.mine || [])).catch(() => {});
+    } else if (msg.type === 'dama_state') {
       const st = msg.payload.state;
       if (viewRef.current.code && st.code === viewRef.current.code) {
         syncClock(st.serverNow);
@@ -66,6 +73,13 @@ export default function DamaApp({ profile, onExit, onWalletRefresh }) {
   });
 
   useEffect(() => { loadLobby(); }, [loadLobby]);
+
+  // live lobby: open rooms update in real time while the lobby is visible
+  useEffect(() => {
+    if (view.name !== 'lobby' || !connected) return undefined;
+    send('dama_lobby');
+    return () => send('dama_lobby_leave');
+  }, [connected, view.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // subscribe to the room and re-subscribe after every reconnect (reconnection recovery)
   useEffect(() => {
@@ -87,13 +101,21 @@ export default function DamaApp({ profile, onExit, onWalletRefresh }) {
   }
   const toLobby = () => { setView({ name: 'lobby', code: null }); setRoom(null); onWalletRefresh?.(); loadLobby(); };
   const onSearch = (bet) => guard(async () => { const r = await api.damaPlay({ bet }); onWalletRefresh?.(); enter(r.code); });
+  const onCreate = (bet) => guard(async () => { const r = await api.damaCreate({ bet }); onWalletRefresh?.(); enter(r.code); });
+  const onJoin = (code, bet) => guard(async () => {
+    if (bet > Number(profile?.wallet?.balance || 0)) throw new Error('ቀሪ ሂሳብዎ (ETB) ለመግባት በቂ አይደለም');
+    const r = await api.damaJoin(code);
+    hapticSuccess();
+    onWalletRefresh?.();
+    enter(r.code);
+  });
   const onCancel = () => guard(async () => { await api.damaCancel(view.code); toLobby(); });
 
   return (
     <div className={`dm-root${view.name === 'room' ? ' dm-room' : ''}`}>
       {toast && <div className={`dm-toast${toast.ok ? ' ok' : ''}`}>{toast.text}</div>}
       {view.name === 'lobby' ? (
-        <Lobby cfg={cfg} mine={mine} history={history} balance={profile?.wallet?.balance} connected={connected} busy={busy} onBack={onExit} onSearch={onSearch} onOpen={enter} />
+        <Lobby cfg={cfg} lobby={lobby} mine={mine} history={history} offset={offset} balance={profile?.wallet?.balance} connected={connected} busy={busy} onBack={onExit} onSearch={onSearch} onCreate={onCreate} onJoin={onJoin} onOpen={enter} />
       ) : (
         <Room state={room} offset={offset} me={profile?.userId5d} connected={connected} send={send} busy={busy} onCancel={onCancel} onLobby={toLobby} onSearchAgain={(bet) => onSearch(bet)} say={say} />
       )}
@@ -102,8 +124,11 @@ export default function DamaApp({ profile, onExit, onWalletRefresh }) {
 }
 
 // ---------------------------------------------------------------------------------- lobby
-function Lobby({ cfg, mine, history, balance, connected, busy, onBack, onSearch, onOpen }) {
+function Lobby({ cfg, lobby, mine, history, offset, balance, connected, busy, onBack, onSearch, onCreate, onJoin, onOpen }) {
   const [bet, setBet] = useState(null);
+  const now = useNow(500);
+  const rooms = lobby?.rooms || [];
+  const myCodes = new Set((mine || []).map((m) => m.code));
   const [showRules, setShowRules] = useState(false);
   const sel = cfg?.bets?.find((b) => b.bet === bet);
   const short = sel && sel.bet > Number(balance || 0);
@@ -126,6 +151,42 @@ function Lobby({ cfg, mine, history, balance, connected, busy, onBack, onSearch,
       )}
 
       <div className="dm-panel">
+        <h3 className="dm-title">ክፍት ክፍሎች ({rooms.length}){lobby?.playing ? ` · ${lobby.playing} ጨዋታ በመካሄድ ላይ` : ''}</h3>
+        <div className="dm-rooms">
+          {!lobby && <div className="dm-muted center">በመጫን ላይ…</div>}
+          {lobby && rooms.length === 0 && <div className="dm-muted center">አሁን ክፍት ክፍል የለም። ከታች ውርርድ መርጠው ክፍል ይፍጠሩ ወይም ተጋጣሚ ይፈልጉ።</div>}
+          {rooms.map((r) => {
+            const left = secondsLeft(r.waitDeadline, now, offset);
+            const isMine = myCodes.has(r.code);
+            const tooPoor = r.bet > Number(balance || 0);
+            return (
+              <div className="dm-rcard" key={r.code}>
+                <div className="dm-rl">
+                  <div className="r1">
+                    <b>{r.players[0]?.name || '@***'}</b>
+                    <span className="dm-dots">{[0, 1].map((i) => <span key={i} className={`d${i < r.players.length ? ' on' : ''}`} />)}</span>
+                    <span className={`dm-pill${left != null && left <= 20 ? ' low' : ''}`}>🕒 {mmss(left)}</span>
+                  </div>
+                  <div className="r2">
+                    <span className="fee">{fmt(r.bet)} ETB</span>
+                    <span className="cnt">{r.players.length}/2</span>
+                    <span className="prz">🏆 {fmt(r.prize)} ETB</span>
+                  </div>
+                </div>
+                {isMine ? (
+                  <button className="dm-join mine" onClick={() => onOpen(r.code)}>ክፈት</button>
+                ) : (
+                  <button className="dm-join" disabled={busy || left === 0 || tooPoor || !cfg?.enabled || !!running} onClick={() => { hapticImpact('light'); onJoin(r.code, r.bet); }}>
+                    {tooPoor ? 'ሂሳብ ያንሳል' : 'Join'}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="dm-panel">
         <h3 className="dm-title">የውርርድ መጠን ይምረጡ</h3>
         {!cfg && <div className="dm-muted center">በመጫን ላይ…</div>}
         {cfg && !cfg.enabled && <div className="dm-muted center">King Dama ለጊዜው ተዘግቷል</div>}
@@ -145,9 +206,13 @@ function Lobby({ cfg, mine, history, balance, connected, busy, onBack, onSearch,
             <p className="dm-muted">አቻ ከሆነ ሙሉ ውርርድዎ ይመለሳል። ተጋጣሚ ካልተገኘ ክፍያው ይመለሳል፤ ኮሚሽን አይቆረጥም። ተራዎ {cfg.turnSeconds} ሰከንድ ነው።</p>
           </div>
         )}
-        <button className="dm-btn" disabled={!sel || short || busy || !cfg?.enabled} onClick={() => onSearch(sel.bet)}>
-          {short ? 'ቀሪ ሂሳብ በቂ አይደለም' : sel ? `ተጋጣሚ ፈልግ — ${fmt(sel.bet)} ETB` : 'መጠን ይምረጡ'}
+        <button className="dm-btn" disabled={!sel || short || busy || !cfg?.enabled || !!running} onClick={() => onCreate(sel.bet)}>
+          {short ? 'ቀሪ ሂሳብ በቂ አይደለም' : sel ? `＋ ክፍል ፍጠር — ${fmt(sel.bet)} ETB` : 'መጠን ይምረጡ'}
         </button>
+        <button className="dm-btn alt" disabled={!sel || short || busy || !cfg?.enabled || !!running} onClick={() => onSearch(sel.bet)}>
+          {sel ? `♟ ተጋጣሚ ፈልግ (PLAY NOW) — ${fmt(sel.bet)} ETB` : 'PLAY NOW'}
+        </button>
+        {running && <p className="dm-muted center">አንድ ጊዜ በአንድ ክፍል ውስጥ ብቻ መሆን ይቻላል። መጀመሪያ አሁን ያለዎትን ክፍል ያጠናቅቁ ወይም ይሰርዙ።</p>}
         <button className="dm-link" onClick={() => setShowRules((v) => !v)}>{showRules ? 'ደንቦችን ደብቅ' : 'የጨዋታ ደንቦች'}</button>
         {showRules && (
           <ul className="dm-rules">
@@ -195,11 +260,11 @@ function Room({ state, offset, me, connected, send, busy, onCancel, onLobby, onS
     return (
       <div className="dm-panel center dm-wait">
         <div className="dm-spinner" />
-        <h3 className="dm-title">ተጋጣሚ በመፈለግ ላይ…</h3>
+        <h3 className="dm-title">ተጋጣሚ በመጠበቅ ላይ…</h3>
         <div className="dm-bigtimer">{mmss(left)}</div>
         <div className="dm-muted">የቀረ የፍለጋ ጊዜ · ውርርድ <b>{fmt(state.bet)} ETB</b></div>
         <div className="dm-muted">አሸናፊ ይቀበላል {fmt(state.prize)} ETB · ተጋጣሚ ሲገኝ ጨዋታው በራሱ ይጀምራል</div>
-        <button className="dm-btn danger" disabled={busy} onClick={onCancel}>ፍለጋ ሰርዝ (Cancel Search)</button>
+        <button className="dm-btn danger" disabled={busy} onClick={onCancel}>ክፍሉን ሰርዝ (ክፍያ ይመለሳል)</button>
       </div>
     );
   }
