@@ -195,7 +195,6 @@ export default function LudoRoom({ state, events, offset, me, balance, connected
               );
             })}
           </div>
-          <button className="lu-ghost" onClick={onLeave}>ውጣ {state.bet > 0 ? '(ክፍያ ይመለሳል)' : ''}</button>
         </div>
       </>
     );

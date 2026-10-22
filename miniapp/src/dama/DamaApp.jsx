@@ -264,7 +264,6 @@ function Room({ state, offset, me, connected, send, busy, onCancel, onLobby, onS
         <div className="dm-bigtimer">{mmss(left)}</div>
         <div className="dm-muted">የቀረ የፍለጋ ጊዜ · ውርርድ <b>{fmt(state.bet)} ETB</b></div>
         <div className="dm-muted">አሸናፊ ይቀበላል {fmt(state.prize)} ETB · ተጋጣሚ ሲገኝ ጨዋታው በራሱ ይጀምራል</div>
-        <button className="dm-btn danger" disabled={busy} onClick={onCancel}>ክፍሉን ሰርዝ (ክፍያ ይመለሳል)</button>
       </div>
     );
   }

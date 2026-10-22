@@ -209,7 +209,7 @@ export default function GameRoom({ roomCode, balance, myUserId5d, onExit, onPlay
     <div className="gr-root">
       {/* top bar */}
       <div className="gr-top">
-        <button className="gr-back" onClick={onExit}>← Back</button>
+        <button className="gr-back" onClick={onExit} disabled={status === 'WAITING' || status === 'COUNTDOWN'} style={status === 'WAITING' || status === 'COUNTDOWN' ? { visibility: 'hidden' } : undefined}>← Back</button>
         <div className="gr-title"><span className="gr-crown">♛</span>KING BINGO</div>
         <div className="gr-credit">
           <GameIcon name="wallet" size={20} style={{ verticalAlign: 'middle', marginRight: 4 }} />{balance ?? 0} ETB

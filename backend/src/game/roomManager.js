@@ -9,11 +9,11 @@ const CALL_INTERVAL_MS = 4500; // pacing between number calls
 
 // Phase 1: how long the very first player waits alone for an opponent
 // before being auto-refunded and sent back to the Lobby.
-const FIRST_PLAYER_WAIT_SECONDS = 60;
+const FIRST_PLAYER_WAIT_SECONDS = 120;
 
 // Phase 2: once the minimum number of players is reached, how long the
 // room stays open for additional players before the game auto-starts.
-const COUNTDOWN_SECONDS = 60;
+const COUNTDOWN_SECONDS = 90;
 
 /**
  * In-memory registry of live rooms. Each entry mirrors the DB row plus
