@@ -13,20 +13,24 @@ export default function Games({ onPlayBingo, onPlayLudo, onPlayDama }) {
       <h1 className="section-title">Play Games</h1>
       <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 14 }}>ለመጫወት ጨዋታ ይምረጡ</div>
 
-      {games.map((g) => (
-        <button
-          key={g.key}
-          aria-label={g.label}
-          className="ticket-card"
-          style={{ width: '100%', color: 'inherit', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-          onClick={() => {
-            hapticImpact('medium');
-            g.onClick();
-          }}
-        >
-          <GameIcon name={g.key} size={96} />
-        </button>
-      ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        {games.map((g) => (
+          <button
+            key={g.key}
+            aria-label={g.label}
+            style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', display: 'block', minWidth: 0 }}
+            onClick={() => {
+              hapticImpact('medium');
+              g.onClick();
+            }}
+          >
+            <GameIcon
+              name={g.key}
+              style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1', borderRadius: 14, display: 'block' }}
+            />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
