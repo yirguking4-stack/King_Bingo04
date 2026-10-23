@@ -7,7 +7,7 @@ const API = String(import.meta.env.VITE_BACKEND_URL || '')
 
 // Set to false if you only want to open the sheet from your own button:
 //   window.dispatchEvent(new Event('king-support-open'))
-const SHOW_FLOATING_BUTTON = true;
+const SHOW_FLOATING_BUTTON = false;
 
 const OPTIONS = [
   { id: 'reg', text: 'ከምዝገባ ጋር ለተያያዘ እገዛ' },

@@ -12,7 +12,7 @@ export default function BottomNav({ active, onChange }) {
   return (
     <nav className="bottom-nav">
       {TABS.map((tab) => (
-        <button key={tab.key} className={active === tab.key ? 'active' : ''} onClick={() => onChange(tab.key)}>
+        <button key={tab.key} className={active === tab.key ? 'active' : ''} onClick={() => (tab.key === 'support' ? window.dispatchEvent(new Event('king-support-open')) : onChange(tab.key))}>
           <span className="nav-icon">{tab.img ? <GameIcon name={tab.img} size={26} /> : tab.icon}</span>
           {tab.label}
         </button>
