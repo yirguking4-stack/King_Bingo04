@@ -22,6 +22,7 @@ app.use(express.json({ limit: '1mb' })); // deposit screenshots arrive as compre
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'king-bingo-backend' }));
 
+const supportRouter = require('./support/supportRoutes.cjs');
 app.use('/api/support', supportRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -33,7 +34,6 @@ const damaRoutes = require('./dama/damaRoutes');
 app.use('/api/dama', damaRoutes.router);
 const menuBanner = require('./routes/menuBannerRoutes');
 app.use('/api/admin/menu-banner', menuBanner.admin);
-const supportRouter = require('./support/supportRoutes.cjs');
 const agentRoutes = require('./routes/agentRoutes');
 app.use('/api/admin/agents', agentRoutes.admin);
 app.use('/api/agent', agentRoutes.staff);
