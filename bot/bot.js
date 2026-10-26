@@ -34,6 +34,30 @@ function supportRow() {
   return SUPPORT_USERNAME ? [{ text: '💬 እርዳታ / Support', url: `https://t.me/${SUPPORT_USERNAME}` }] : null;
 }
 
+function tgLink(raw) {
+  let v = String(raw || '').trim();
+  if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^t\.me\//i.test(v)) return 'https://' + v;
+  v = v.replace(/^@/, '');
+  return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(v) ? `https://t.me/${v}` : '';
+}
+const CHANNEL_LINK = tgLink(process.env.CHANNEL_URL);
+const GROUP_LINK = tgLink(process.env.GROUP_URL);
+
+async function handleJoinCallback(q) {
+  if (q.data !== 'join') return false;
+  await bot.answerCallbackQuery(q.id).catch(() => {});
+  if (!q.message) return true;
+  const rows = [];
+  const lines = [];
+  if (CHANNEL_LINK) { rows.push([{ text: '📢 Channel ይቀላቀሉ', url: CHANNEL_LINK }]); lines.push(`📢 Channel: ${CHANNEL_LINK}`); }
+  if (GROUP_LINK) { rows.push([{ text: '👥 Group ይቀላቀሉ', url: GROUP_LINK }]); lines.push(`👥 Group: ${GROUP_LINK}`); }
+  const text = rows.length ? `KING BINGO Channel እና Group ይቀላቀሉ 👇\n\n${lines.join('\n')}` : 'የ Channel እና Group ሊንኮች ገና አልተዘጋጁም። እባክዎ ቆይተው ይሞክሩ።';
+  await bot.sendMessage(q.message.chat.id, text, { reply_markup: rows.length ? { inline_keyboard: rows } : undefined, disable_web_page_preview: true });
+  return true;
+}
+
 if (!TOKEN) {
   console.error('[bot] TELEGRAM_BOT_TOKEN is required');
   process.exit(1);
@@ -154,18 +178,10 @@ function appLink(params = {}) {
 
 function buildMenuKeyboard(userId5d) {
   const open = (text, params) => ({ text, web_app: { url: appLink(params) } });
-  const help = SUPPORT_USERNAME ? { text: 'እርዳታ 📲', url: `https://t.me/${SUPPORT_USERNAME}` } : open('እርዳታ 📲', { tab: 'support' });
-  const shareText = '🎰 KING BINGO ተጫውተው ያሸንፉ! በዚህ ሊንክ ይመዝገቡ 👇';
-  // the player's own invite link (their Player ID) is only known for registered players
-  const share =
-    userId5d && BOT_USERNAME
-      ? {
-          text: 'Share & Earn 🎁',
-          url: `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${BOT_USERNAME}?start=${userId5d}`)}&text=${encodeURIComponent(shareText)}`,
-        }
-      : open('Share & Earn 🎁', { tab: 'profile' });
+  const help = open('እርዳታ 📲', { tab: 'support' });
+  const share = { text: 'Join Group/Channel 📢', callback_data: 'join' };
   return [
-    [open('Play Games 🎮', { tab: 'games' }), open('King Dama ♛', { tab: 'dama' })],
+    [open('Play Games 🎮', { tab: 'games' })],
     [open('Deposit 💰', { tab: 'deposit' }), open('Withdraw 💰', { tab: 'withdraw' })],
     [open('My Profile 👤', { tab: 'profile' }), open('Transactions 📜', { tab: 'transactions' })],
     [help, share],
@@ -371,6 +387,7 @@ async function renderAlertsPage(telegramId, page) {
 
 bot.on('callback_query', async (q) => {
   try {
+    if (await handleJoinCallback(q)) return;
     const m = /^(acct|acctp):(\d+)$/.exec(q.data || '');
     if (!m) return bot.answerCallbackQuery(q.id);
     await bot.answerCallbackQuery(q.id);
