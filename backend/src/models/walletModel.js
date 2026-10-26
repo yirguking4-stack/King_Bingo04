@@ -1,7 +1,7 @@
 const { withTransaction } = require('../config/db');
 
-const FIRST_JOIN_BONUS = 25.0; // virtual credits, locked until 1 game played
-const REFERRAL_BONUS = 15.0; // virtual credits, credited to referrer
+const FIRST_JOIN_BONUS = 50.0; // virtual credits, locked until 1 game played
+const REFERRAL_BONUS = 20.0; // virtual credits, credited to referrer
 
 /**
  * Creates a PENDING virtual-credit deposit request. This does not move any

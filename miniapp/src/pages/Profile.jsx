@@ -23,8 +23,8 @@ export default function Profile({ profile }) {
   const shareText =
     '👑🎰 KING BINGO — ዕድልዎ ዛሬ ሊከፈት ይችላል! 🎰👑\n' +
     'ተጫውተው ያሸንፉ፣ ሽልማትዎን ይውሰዱ!\n\n' +
-    '✍️ ተመዝግበው በመጀመሪያ Deposit 25 ETB Bonus ያገኛሉ።\n' +
-    '✍️ ሌላ ሰው ሲጋብዙ 👉 የጋበዙት ሰው የእርሶን player_ID ተጠቅሞ ከተመዘገበ እና የመጀመሪያውን Deposit ሲያደርግ ለእርሶ 15 ETB ኮሚሽን ያገኛሉ።\n' +
+    '✍️ ተመዝግበው በመጀመሪያ Deposit 50 ETB Bonus ያገኛሉ።\n' +
+    '✍️ ሌላ ሰው ሲጋብዙ 👉 የጋበዙት ሰው የእርሶን player_ID ተጠቅሞ ከተመዘገበ እና የመጀመሪያውን Deposit ሲያደርግ ለእርሶ 20 ETB ኮሚሽን ያገኛሉ።\n' +
     (supportUsername ? `✅ ለበለጠ መረጃ ➡ @${supportUsername}\n` : '') +
     '🏆 እንዳያመልጣችሁ!\n\n' +
     '👇 አሁን ይቀላቀሉ';
