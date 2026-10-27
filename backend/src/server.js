@@ -41,6 +41,7 @@ app.use('/api/admin/dama', damaRoutes.admin);
 app.use('/api/admin/ludo', ludoRoutes.admin); // before /api/admin so the Ludo admin view is reachable
 app.use('/api/admin', adminRoutes);
 app.use('/api/bot', botRoutes);
+app.use('/api/broadcast', require('./routes/broadcastRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 
 app.use((err, req, res, next) => {

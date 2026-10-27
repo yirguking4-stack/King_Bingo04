@@ -76,6 +76,7 @@ process.on('uncaughtException', (err) => {
 // A webhook left over from earlier testing causes a 409 conflict that can
 // crash some versions of this library on startup.
 const bot = new TelegramBot(TOKEN, { polling: false });
+require('./broadcast.cjs')(bot);
 
 async function start() {
   try {
@@ -387,6 +388,7 @@ async function renderAlertsPage(telegramId, page) {
 
 bot.on('callback_query', async (q) => {
   try {
+if (/^bc:/.test(q.data || '')) return; // handled by broadcast.cjs
     if (await handleJoinCallback(q)) return;
     const m = /^(acct|acctp):(\d+)$/.exec(q.data || '');
     if (!m) return bot.answerCallbackQuery(q.id);
