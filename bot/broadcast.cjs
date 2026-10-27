@@ -113,9 +113,18 @@ module.exports = function registerBroadcast(bot) {
   bot.on('message', async (msg) => {
     try {
       if (!msg.from || msg.chat.type !== 'private') return;
-      const st = state.get(String(msg.from.id));
-      if (!st || st.step !== 'content' || !isAdmin(msg.from.id)) return;
+      if (!isAdmin(msg.from.id)) return;
       if (typeof msg.text === 'string' && msg.text.startsWith('/')) return;
+      const key = String(msg.from.id);
+      let st = state.get(key);
+      if (!st) {
+        // Admin simply sends text / photo / video / file -> preview + confirm (no /broadcast needed)
+        const hasContent = msg.text || msg.photo || msg.video || msg.document || msg.animation ||
+          msg.audio || msg.voice || msg.video_note;
+        if (!hasContent || running) return;
+        st = { step: 'content' };
+        state.set(key, st);
+      }
 
       st.step = 'confirm';
       st.src = { chatId: msg.chat.id, messageId: msg.message_id };
