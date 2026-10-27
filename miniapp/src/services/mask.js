@@ -6,6 +6,6 @@
 export function maskUsername(name) {
   const chars = [...String(name || '').replace(/^@/, '')];
   if (chars.length === 0) return '***';
-  const visible = Math.floor(chars.length / 2);
+  const visible = chars.length >= 4 ? 3 : chars.length >= 2 ? 1 : 0;
   return chars.slice(0, visible).join('') + '*'.repeat(chars.length - visible);
 }

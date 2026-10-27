@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { maskName } from '../utils/maskName';
 import { api } from '../services/api';
 import WebApp from '@twa-dev/sdk';
 
@@ -87,7 +88,7 @@ export default function Profile({ profile }) {
       </h2>
       {referrals.map((r) => (
         <div key={r.user_id_5d} className="ticket-card" style={{ padding: 12 }}>
-          <strong>{r.user_id_5d}</strong> · @{r.username}
+          <strong>{r.user_id_5d}</strong> · @{maskName(r.username)}
         </div>
       ))}
 

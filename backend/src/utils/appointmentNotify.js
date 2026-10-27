@@ -33,11 +33,11 @@ function notifyNewAppointment({ authorUserId, body, authorName }) {
       [authorUserId]
     );
 
-    const text = `🗓 አዲስ ቀጠሮ ሀሳብ\n\n"${body}"\n— @${maskName(authorName)}\n\nየሚስማሙ ከሆነ 👍 ይጫኑ 👇`;
+    const text = `🗓 አዲስ ቀጠሮ ሀሳብ\n\n"${body}"\n— @${maskName(authorName)}`;
     const url = process.env.MINI_APP_URL;
     const replyMarkup =
       url && /^https:\/\//i.test(url)
-        ? { inline_keyboard: [[{ text: '🗓 ቀጠሮዎችን ክፈት', web_app: { url: `${url.replace(/\/$/, '')}/?tab=appointments` } }]] }
+        ? { inline_keyboard: [[{ text: 'የሚስማሙ ከሆነ 👍 ይጫኑ', web_app: { url: `${url.replace(/\/$/, '')}/?tab=appointments` } }]] }
         : undefined;
 
     let ok = 0;
