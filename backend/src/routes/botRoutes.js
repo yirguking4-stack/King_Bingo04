@@ -41,8 +41,7 @@ router.post('/register', async (req, res) => {
   if (!username) {
     return res.status(400).json({
       error: 'USERNAME_REQUIRED',
-      message:
-        'Access Blocked: A Telegram @username is required to use this app. Please set a username in your Telegram profile settings and type /start again.',
+      message: 'ይሄንን Bot ለመጠቀም የቴሌግራም @username ያስፈልጋል። እባክዎ በቴሌግራም ፕሮፋይል ቅንብር ውስጥ ➝"Add username" የሚለውን ነክተው username ያስቀምጡና /start ብለው እንደገና ይላኩ። ወይም ካስቸገሮት በዚህ username እርዳታ ይጠይቁ @KingSupport07\n\nA Telegram @username is required to use this bot. Open your profile settings, select \'Add username\', and send /start once more. If you run into any issues, contact @KingSupport07 for assistance.',
     });
   }
   if (!phoneNumber) return res.status(400).json({ error: 'Phone number is required' });

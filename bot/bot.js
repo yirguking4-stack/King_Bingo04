@@ -260,6 +260,10 @@ bot.on('pinned_message', (msg) => {
   bot.deleteMessage(msg.chat.id, msg.message_id).catch(() => {});
 });
 
+const USERNAME_REQUIRED_TEXT =
+  'ይሄንን Bot ለመጠቀም የቴሌግራም @username ያስፈልጋል። እባክዎ በቴሌግራም ፕሮፋይል ቅንብር ውስጥ ➝"Add username" የሚለውን ነክተው username ያስቀምጡና /start ብለው እንደገና ይላኩ። ወይም ካስቸገሮት በዚህ username እርዳታ ይጠይቁ @KingSupport07\n\n' +
+  "A Telegram @username is required to use this bot. Open your profile settings, select 'Add username', and send /start once more. If you run into any issues, contact @KingSupport07 for assistance.";
+
 async function handleStart(msg, match) {
   const chatId = msg.chat.id;
   const telegramId = msg.from.id;
@@ -269,11 +273,7 @@ async function handleStart(msg, match) {
   console.log(`[bot] /start from telegramId=${telegramId} username=${username || '(none)'}`);
 
   if (!username) {
-    return bot.sendMessage(
-      chatId,
-      'Access Blocked: A Telegram @username is required to use this app. Please set a username in your Telegram profile settings and type /start again.\n\n' +
-        'መግባት አይቻልም፦ ይህን መተግበሪያ ለመጠቀም የቴሌግራም @username ያስፈልጋል። እባክዎ በቴሌግራም ፕሮፋይል ቅንብር ውስጥ username ያስቀምጡና /start ብለው እንደገና ይላኩ።'
-    );
+    return bot.sendMessage(chatId, USERNAME_REQUIRED_TEXT);
   }
 
   const ref = param && /^[0-9]{5}$/.test(param) ? param : null;
