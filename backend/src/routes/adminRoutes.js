@@ -178,6 +178,23 @@ router.get('/rooms', async (req, res) => {
   res.json(result.rows);
 });
 
+// ---- King Bingo game history (finished + cancelled) ----
+router.get('/bingo/history', async (req, res) => {
+  const result = await query(
+    `SELECT gr.room_code, gr.status, gr.winner_pattern, gr.pot_total, gr.commission_taken, gr.started_at, gr.ended_at, gr.created_at,
+            st.entry_credits AS bet_amount,
+            CASE WHEN gr.status = 'FINISHED' THEN 'FINISHED' WHEN gr.started_at IS NULL THEN 'EXPIRED' ELSE 'CANCELLED' END AS end_reason,
+            (SELECT COALESCE(SUM(e.prize_credits), 0) FROM game_entries e WHERE e.game_room_id = gr.id AND e.is_winner) AS prize,
+            COALESCE((SELECT json_agg(json_build_object('id_5d', u.user_id_5d, 'username', u.username) ORDER BY e.id)
+                      FROM game_entries e JOIN users u ON u.id = e.user_id
+                      WHERE e.game_room_id = gr.id AND e.is_winner), '[]'::json) AS winners
+       FROM game_rooms gr JOIN stake_tiers st ON st.id = gr.stake_tier_id
+      WHERE gr.status IN ('FINISHED', 'CANCELLED')
+      ORDER BY gr.ended_at DESC NULLS LAST, gr.id DESC LIMIT 200`
+  );
+  res.json(result.rows);
+});
+
 // ---- Audit logs ----
 router.get('/audit-logs', async (req, res) => {
   const result = await query(

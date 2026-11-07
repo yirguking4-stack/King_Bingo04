@@ -214,3 +214,7 @@ tr:last-child td {
   font-family: var(--font-ui);
   font-size: 14px;
 }
+
+.badge.finished { background: #e2f2ec; color: var(--admin-success); }
+.badge.cancelled, .badge.expired { background: #fbe6e3; color: var(--admin-danger); }
+.badge.in_progress, .badge.countdown, .badge.waiting { background: var(--admin-accent-soft); color: var(--admin-accent); }

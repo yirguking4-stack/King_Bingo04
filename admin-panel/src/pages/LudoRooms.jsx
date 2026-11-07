@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
+const reasonLabel = (r) => (r.status === 'FINISHED' ? 'Finished' : r.end_reason === 'EXPIRED' ? 'Expired' : 'Cancelled');
 
 export default function LudoRooms() {
   const [data, setData] = useState(null);
@@ -26,14 +27,14 @@ export default function LudoRooms() {
 
       <h3>Waiting &amp; running rooms ({data.live.length})</h3>
       <table>
-        <thead><tr><th>Room</th><th>Status</th><th>Mode</th><th>Crowns</th><th>Bet</th><th>Players</th><th>Pot</th><th>Created</th></tr></thead>
+        <thead><tr><th>Room</th><th>Status</th><th>Mode</th><th>Pawns</th><th>Bet</th><th>Players</th><th>Pot</th><th>Created</th></tr></thead>
         <tbody>
           {data.live.map((r) => (
             <tr key={r.room_code}>
               <td>{r.room_code}</td>
               <td><span className={`badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
               <td>{r.capacity}P</td>
-              <td>{r.crowns}</td>
+              <td>{r.crowns}♟</td>
               <td>{Number(r.bet_amount) === 0 ? 'Free' : r.bet_amount}</td>
               <td>{r.players}/{r.capacity}</td>
               <td>{r.pot_total}</td>
@@ -43,7 +44,7 @@ export default function LudoRooms() {
         </tbody>
       </table>
 
-      <h3>Completed &amp; cancelled</h3>
+      <h3>Game history</h3>
       <table>
         <thead><tr><th>Room</th><th>Status</th><th>Mode</th><th>Bet</th><th>Winner</th><th>Prize</th><th>Commission</th><th>Reason</th><th>Ended</th></tr></thead>
         <tbody>
@@ -51,12 +52,12 @@ export default function LudoRooms() {
             <tr key={r.room_code}>
               <td>{r.room_code}</td>
               <td><span className={`badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
-              <td>{r.capacity}P · ♛{r.crowns}</td>
+              <td>{r.capacity}P · {r.crowns}♟</td>
               <td>{Number(r.bet_amount) === 0 ? 'Free' : r.bet_amount}</td>
-              <td>{r.winner_id_5d ? `${r.winner_id_5d} ${r.winner_username}` : '—'}</td>
+              <td>{r.winner_id_5d ? `${r.winner_id_5d} @${r.winner_username}` : '—'}</td>
               <td>{r.prize}</td>
               <td>{r.commission_taken}</td>
-              <td>{r.end_reason || '—'}</td>
+              <td>{reasonLabel(r)}{r.end_reason && r.end_reason !== 'EXPIRED' ? <small style={{ color: 'var(--admin-muted)' }}> ({r.end_reason})</small> : null}</td>
               <td>{fmt(r.ended_at)}</td>
             </tr>
           ))}

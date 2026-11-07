@@ -84,6 +84,7 @@ export const api = {
   },
   reviewTransaction: (id, decision) => request(`${staffBase()}/transactions/${id}/review`, { method: 'POST', body: JSON.stringify({ decision }) }),
   rooms: () => request('/api/admin/rooms'),
+  bingoHistory: () => request('/api/admin/bingo/history'),
   menuBanner: () => request('/api/admin/menu-banner'),
   uploadMenuBanner: (file) => request('/api/admin/menu-banner', { method: 'PUT', headers: { 'Content-Type': file.type }, body: file }),
   resetMenuBanner: () => request('/api/admin/menu-banner', { method: 'DELETE' }),

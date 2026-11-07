@@ -14,7 +14,7 @@ const NAV = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'users', label: 'Players' },
   { key: 'transactions', label: 'Transactions' },
-  { key: 'rooms', label: 'Game Rooms' },
+  { key: 'rooms', label: 'King Bingo' },
   { key: 'ludo', label: 'King Ludo' },
   { key: 'dama', label: 'King Dama' },
   { key: 'audit', label: 'Audit Logs' },

@@ -12,7 +12,7 @@ function Crown() {
   );
 }
 
-const BETS = [0, 20, 30, 50, 100, 200, 300, 500, 700, 1000, 2000, 3000, 4000, 5000, 7000, 10000];
+const BETS = [20, 30, 50, 100, 200, 300, 500, 700, 1000, 2000, 3000, 4000, 5000, 7000, 10000, 0]; // Free (0) is shown last
 
 export default function LudoLobby({ lobby, mine, balance, connected, busy, offset, onBack, onJoin, onOpen, onPlay, onCreate }) {
   const [capacity, setCapacity] = useState(2);
@@ -65,8 +65,8 @@ export default function LudoLobby({ lobby, mine, balance, connected, busy, offse
                   </div>
                 </div>
                 <div className="lu-rr">
-                  <div className="crowns">{Array.from({ length: r.crowns }, (_, i) => <Crown key={i} />)}</div>
                   <div className="prize">{r.bet > 0 ? `${r.prize} ETB` : 'Free'}</div>
+                  <div className="crowns" style={{ fontSize: 16, letterSpacing: 3, color: '#dfe6ee', lineHeight: 1, marginTop: 5, minHeight: 0 }}>{'♟\uFE0E'.repeat(r.crowns)}</div>
                 </div>
                 {isMine ? (
                   <button className="lu-join2 mine" onClick={() => onOpen(r.code)}>ክፈት</button>

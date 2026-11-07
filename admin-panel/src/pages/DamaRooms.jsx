@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
 const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
+const reasonLabel = (r) => (r.status === 'FINISHED' ? 'Finished' : r.end_reason === 'EXPIRED' ? 'Expired' : 'Cancelled');
 const box = { padding: 8, border: '1px solid var(--admin-border)', borderRadius: 8 };
 
 export default function DamaRooms() {
@@ -96,7 +97,7 @@ export default function DamaRooms() {
         </tbody>
       </table>
 
-      <h3>Completed &amp; cancelled</h3>
+      <h3>Game history</h3>
       <table>
         <thead><tr><th>Room</th><th>Status</th><th>Stake</th><th>Winner</th><th>Prize</th><th>Commission</th><th>Reason</th><th>Ended</th></tr></thead>
         <tbody>
@@ -105,10 +106,10 @@ export default function DamaRooms() {
               <td>{r.room_code}</td>
               <td><span className={`badge ${r.status.toLowerCase()}`}>{r.is_draw ? 'DRAW' : r.status}</span></td>
               <td>{r.bet_amount}</td>
-              <td>{r.winner_id_5d ? `${r.winner_id_5d} ${r.winner_username}` : '—'}</td>
+              <td>{r.winner_id_5d ? `${r.winner_id_5d} @${r.winner_username}` : '—'}</td>
               <td>{r.prize}</td>
               <td>{r.commission_taken}</td>
-              <td>{r.end_reason || '—'}</td>
+              <td>{reasonLabel(r)}{r.end_reason && r.end_reason !== 'EXPIRED' ? <small style={{ color: 'var(--admin-muted)' }}> ({r.end_reason})</small> : null}</td>
               <td>{fmt(r.ended_at)}</td>
             </tr>
           ))}
