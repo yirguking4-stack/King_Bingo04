@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { query } = require('../config/db');
+const { adminAccess } = require('../utils/adminPerms');
 
 /**
  * Requires a valid JWT (issued after Telegram initData verification).
@@ -42,4 +43,39 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireAdmin };
+/**
+ * Requires an admin who may do AT LEAST ONE of the listed things (owners may do everything).
+ * Must run after requireAuth + requireAdmin. Reads the permission from the database on every request.
+ * Attaches req.adminAccess = { admin, owner, perms }.
+ */
+function requirePerm(...keys) {
+  return async (req, res, next) => {
+    try {
+      const access = await adminAccess(req.user);
+      if (!access.admin) return res.status(403).json({ error: 'Admin access required' });
+      if (!keys.some((k) => access.perms[k] === true)) {
+        return res.status(403).json({ error: 'ይህን ለማድረግ ፈቃድ የለዎትም። (No permission for this action)' });
+      }
+      req.adminAccess = access;
+      return next();
+    } catch (err) {
+      console.error('[auth] permission check failed:', err.message);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+}
+
+/** Only the owner (an admin without a permission row) - used for managing other admins. */
+async function requireOwner(req, res, next) {
+  try {
+    const access = await adminAccess(req.user);
+    if (!access.admin || !access.owner) return res.status(403).json({ error: 'Owner access required' });
+    req.adminAccess = access;
+    return next();
+  } catch (err) {
+    console.error('[auth] owner check failed:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports = { requireAuth, requireAdmin, requirePerm, requireOwner };

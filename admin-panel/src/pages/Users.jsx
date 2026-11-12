@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
-export default function Users() {
+export default function Users({ perms = {} }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [adjusting, setAdjusting] = useState(null); // user id being adjusted
@@ -96,10 +96,12 @@ export default function Users() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn btn-outline" onClick={() => setAdjusting(u.id)}>
-                      Adjust
-                    </button>
-                    {u.status === 'ACTIVE' ? (
+                    {perms.adjust && (
+                      <button className="btn btn-outline" onClick={() => setAdjusting(u.id)}>
+                        Adjust
+                      </button>
+                    )}
+                    {!perms.suspend ? null : u.status === 'ACTIVE' ? (
                       <button className="btn btn-reject" onClick={() => changeStatus(u.id, 'SUSPENDED')}>
                         Suspend
                       </button>

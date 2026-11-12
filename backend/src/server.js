@@ -38,6 +38,7 @@ const agentRoutes = require('./routes/agentRoutes');
 app.use('/api/admin/agents', agentRoutes.admin);
 app.use('/api/agent', agentRoutes.staff);
 app.use('/api/admin/dama', damaRoutes.admin);
+app.use('/api/admin/admins', require('./routes/adminAdminsRoutes')); // owner only: manage limited admins
 app.use('/api/admin/ludo', ludoRoutes.admin); // before /api/admin so the Ludo admin view is reachable
 app.use('/api/admin', adminRoutes);
 app.use('/api/bot', botRoutes);

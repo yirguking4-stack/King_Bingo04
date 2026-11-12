@@ -1,6 +1,7 @@
 const express = require('express');
 const { query } = require('../config/db');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePerm } = require('../middleware/auth');
+const { adminAccess } = require('../utils/adminPerms');
 const walletModel = require('../models/walletModel');
 const { ensureProofTable, ensureCbeTable } = require('../utils/botTables');
 const { ensureAgentTables } = require('../utils/agentTables');
@@ -9,7 +10,13 @@ const { notifyReviewResult, notifyAdminAdjust } = require('../utils/balanceNotif
 const router = express.Router();
 router.use(requireAuth, requireAdmin);
 
-// ---- Dashboard ----
+// What may the logged-in admin do? The panel uses this to show only the allowed pages and buttons.
+router.get('/me', async (req, res) => {
+  const a = await adminAccess(req.user);
+  res.json({ owner: a.owner, permissions: a.perms, userId5d: req.user.user_id_5d, username: req.user.username });
+});
+
+// ---- Dashboard (every admin) ----
 router.get('/dashboard', async (req, res) => {
   const [users, pendingTx, roomsToday, creditsInCirculation] = await Promise.all([
     query('SELECT COUNT(*) FROM users'),
@@ -27,7 +34,7 @@ router.get('/dashboard', async (req, res) => {
 });
 
 // ---- Users ----
-router.get('/users', async (req, res) => {
+router.get('/users', requirePerm('adjust', 'suspend'), async (req, res) => {
   const { search } = req.query;
   let sql = `SELECT u.id, u.user_id_5d, u.referred_by, u.username, u.telegram_id, u.status, u.created_at, w.balance, w.locked_balance
              FROM users u JOIN wallets w ON w.user_id = u.id`;
@@ -42,7 +49,7 @@ router.get('/users', async (req, res) => {
   res.json(result.rows);
 });
 
-router.patch('/users/:id/status', async (req, res) => {
+router.patch('/users/:id/status', requirePerm('suspend'), async (req, res) => {
   const { status } = req.body;
   if (!['ACTIVE', 'SUSPENDED', 'BANNED'].includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
@@ -65,7 +72,11 @@ router.patch('/users/:id/status', async (req, res) => {
 });
 
 // Admin manual credit/debit adjustment (e.g. promotional grant, correction)
-router.post('/users/:id/adjust-balance', async (req, res) => {
+router.post('/users/:id/adjust-balance', requirePerm('adjust'), async (req, res) => {
+  // a limited admin may not change his own balance (the owner is not restricted)
+  if (!req.adminAccess.owner && String(req.params.id) === String(req.user.id)) {
+    return res.status(403).json({ error: 'የራስዎን Balance መቀየር አይችሉም።' });
+  }
   const { amount, direction, reason } = req.body; // direction: 'CREDIT' | 'DEBIT'
   const amt = Number(amount);
   if (!amt || amt <= 0) return res.status(400).json({ error: 'Amount must be positive' });
@@ -119,7 +130,7 @@ router.post('/users/:id/adjust-balance', async (req, res) => {
 });
 
 // ---- Transactions (deposit/withdrawal approval workflow) ----
-router.get('/transactions', async (req, res) => {
+router.get('/transactions', requirePerm('approve'), async (req, res) => {
   const { status, type } = req.query;
   await Promise.all([ensureProofTable(), ensureAgentTables()]);
   let sql = `SELECT t.*, u.user_id_5d, u.username,
@@ -145,7 +156,7 @@ router.get('/transactions', async (req, res) => {
 });
 
 // the screenshot a player attached to a deposit request
-router.get('/transactions/:id/proof', async (req, res) => {
+router.get('/transactions/:id/proof', requirePerm('approve'), async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
   await ensureProofTable();
@@ -156,9 +167,16 @@ router.get('/transactions/:id/proof', async (req, res) => {
   res.send(r.rows[0].data);
 });
 
-router.post('/transactions/:id/review', async (req, res) => {
+router.post('/transactions/:id/review', requirePerm('approve'), async (req, res) => {
   const { decision } = req.body; // 'APPROVED' | 'REJECTED'
   try {
+    // a limited admin may not approve his own request (the owner is not restricted)
+    if (!req.adminAccess.owner) {
+      const own = await query('SELECT user_id FROM transactions WHERE id = $1', [req.params.id]);
+      if (own.rowCount && String(own.rows[0].user_id) === String(req.user.id)) {
+        return res.status(403).json({ error: 'የራስዎን ጥያቄ ማጽደቅ አይችሉም።' });
+      }
+    }
     const tx = await walletModel.reviewTransaction(req.params.id, req.user.id, decision);
     notifyReviewResult(tx, tx.notices || []); // tell the player (fire-and-forget)
     res.json(tx);
@@ -168,7 +186,7 @@ router.post('/transactions/:id/review', async (req, res) => {
 });
 
 // ---- Game rooms ----
-router.get('/rooms', async (req, res) => {
+router.get('/rooms', requirePerm('games'), async (req, res) => {
   const result = await query(
     `SELECT gr.*, st.entry_credits, st.commission_percent,
             (SELECT COUNT(*) FROM game_entries ge WHERE ge.game_room_id = gr.id) AS player_count
@@ -179,7 +197,7 @@ router.get('/rooms', async (req, res) => {
 });
 
 // ---- King Bingo game history (finished + cancelled) ----
-router.get('/bingo/history', async (req, res) => {
+router.get('/bingo/history', requirePerm('games'), async (req, res) => {
   const result = await query(
     `SELECT gr.room_code, gr.status, gr.winner_pattern, gr.pot_total, gr.commission_taken, gr.started_at, gr.ended_at, gr.created_at,
             st.entry_credits AS bet_amount,
@@ -196,7 +214,7 @@ router.get('/bingo/history', async (req, res) => {
 });
 
 // ---- Audit logs ----
-router.get('/audit-logs', async (req, res) => {
+router.get('/audit-logs', requirePerm('audit'), async (req, res) => {
   const result = await query(
     `SELECT al.*, u.user_id_5d AS actor_user_id_5d, u.username AS actor_username
      FROM audit_logs al LEFT JOIN users u ON u.id = al.actor_user_id
@@ -206,12 +224,12 @@ router.get('/audit-logs', async (req, res) => {
 });
 
 // ---- Settings (Telebirr display info, editable by admin) ----
-router.get('/settings', async (req, res) => {
+router.get('/settings', requirePerm('settings'), async (req, res) => {
   const result = await query('SELECT key, value FROM admin_settings');
   res.json(result.rows);
 });
 
-router.put('/settings/:key', async (req, res) => {
+router.put('/settings/:key', requirePerm('settings'), async (req, res) => {
   const { value } = req.body;
   const result = await query(
     `INSERT INTO admin_settings (key, value) VALUES ($1, $2)
@@ -230,13 +248,13 @@ function cleanCbe(body) {
   return { accountName, accountNumber };
 }
 
-router.get('/cbe-accounts', async (req, res) => {
+router.get('/cbe-accounts', requirePerm('settings'), async (req, res) => {
   await ensureCbeTable();
   const r = await query('SELECT id, account_name, account_number FROM cbe_accounts ORDER BY sort_order, id');
   res.json(r.rows.map((x) => ({ id: x.id, accountName: x.account_name, accountNumber: x.account_number })));
 });
 
-router.post('/cbe-accounts', async (req, res) => {
+router.post('/cbe-accounts', requirePerm('settings'), async (req, res) => {
   await ensureCbeTable();
   const c = cleanCbe(req.body);
   if (c.error) return res.status(400).json({ error: c.error });
@@ -252,7 +270,7 @@ router.post('/cbe-accounts', async (req, res) => {
   res.status(201).json({ id: r.rows[0].id, accountName: r.rows[0].account_name, accountNumber: r.rows[0].account_number });
 });
 
-router.put('/cbe-accounts/:id', async (req, res) => {
+router.put('/cbe-accounts/:id', requirePerm('settings'), async (req, res) => {
   await ensureCbeTable();
   const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
@@ -271,7 +289,7 @@ router.put('/cbe-accounts/:id', async (req, res) => {
   res.json({ id: r.rows[0].id, accountName: r.rows[0].account_name, accountNumber: r.rows[0].account_number });
 });
 
-router.delete('/cbe-accounts/:id', async (req, res) => {
+router.delete('/cbe-accounts/:id', requirePerm('settings'), async (req, res) => {
   await ensureCbeTable();
   const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });

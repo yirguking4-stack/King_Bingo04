@@ -1,6 +1,7 @@
 const express = require('express');
 const { query } = require('../config/db');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePerm } = require('../middleware/auth');
+const { adminAccess } = require('../utils/adminPerms');
 const walletModel = require('../models/walletModel');
 const userModel = require('../models/userModel');
 const { ensureProofTable } = require('../utils/botTables');
@@ -13,7 +14,7 @@ const { notifyReviewResult } = require('../utils/balanceNotify');
 // 1) Agent management - ADMIN ONLY:  /api/admin/agents
 // ============================================================================
 const admin = express.Router();
-admin.use(requireAuth, requireAdmin);
+admin.use(requireAuth, requireAdmin, requirePerm('settings')); // agents are managed on the Settings page
 
 const publicAgent = (r) => ({
   id: r.id,
@@ -139,7 +140,10 @@ staff.use(requireAuth);
 async function requireStaff(req, res, next) {
   try {
     if (req.user.is_admin) {
-      req.staff = { role: 'admin', agentId: null };
+      // a limited admin needs the Approve / Reject switch (checked against the database every time)
+      const a = await adminAccess(req.user);
+      if (!a.perms.approve) return res.status(403).json({ error: 'ይህን ለማድረግ ፈቃድ የለዎትም። (No permission for this action)' });
+      req.staff = { role: 'admin', agentId: null, owner: a.owner };
       return next();
     }
     await ensureAgentTables();
@@ -161,7 +165,10 @@ staff.get('/me', (req, res) => {
 /** Admin, active agent, or null - for any user row (used by the panel AND by the Telegram approve/reject buttons). */
 async function staffOf(user) {
   if (!user || user.status !== 'ACTIVE') return null;
-  if (user.is_admin) return { role: 'admin', agentId: null };
+  if (user.is_admin) {
+    const a = await adminAccess(user);
+    return a.perms.approve ? { role: 'admin', agentId: null, owner: a.owner } : null; // no Approve switch = no access
+  }
   await ensureAgentTables();
   const r = await query('SELECT id FROM agents WHERE user_id = $1 AND active = TRUE', [user.id]);
   return r.rowCount ? { role: 'agent', agentId: r.rows[0].id } : null;
@@ -173,7 +180,11 @@ async function canHandleTx(staff, user, txId) {
   if (!t.rowCount) return { ok: false, status: 404, error: 'Transaction not found' };
   const tx = t.rows[0];
   if (!['VIRTUAL_DEPOSIT', 'VIRTUAL_WITHDRAWAL'].includes(tx.type)) return { ok: false, status: 403, error: 'Not allowed' };
-  if (staff.role === 'admin') return { ok: true, tx };
+  if (staff.role === 'admin') {
+    // a limited admin may not approve his own request (the owner is not restricted)
+    if (staff.owner === false && String(tx.user_id) === String(user.id)) return { ok: false, status: 403, error: 'የራስዎን ጥያቄ ማጽደቅ አይችሉም።' };
+    return { ok: true, tx };
+  }
   if (String(tx.user_id) === String(user.id)) return { ok: false, status: 403, error: 'የራስዎን ጥያቄ ማጽደቅ አይችሉም።' };
   if (tx.type === 'VIRTUAL_DEPOSIT') {
     const r = await query('SELECT 1 FROM deposit_routing WHERE transaction_id = $1 AND agent_id = $2', [txId, staff.agentId]);

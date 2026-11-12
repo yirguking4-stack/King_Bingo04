@@ -5,7 +5,7 @@ const fmt = (d) => (d ? new Date(d).toLocaleString() : '—');
 const reasonLabel = (r) => (r.status === 'FINISHED' ? 'Finished' : r.end_reason === 'EXPIRED' ? 'Expired' : 'Cancelled');
 const box = { padding: 8, border: '1px solid var(--admin-border)', borderRadius: 8 };
 
-export default function DamaRooms() {
+export default function DamaRooms({ perms = {} }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -67,7 +67,8 @@ export default function DamaRooms() {
       </p>
 
       <h3>Configuration</h3>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+      {!perms.settings && <p style={{ color: 'var(--admin-muted)', fontSize: 13 }}>View only — you do not have the Settings permission.</p>}
+      <fieldset disabled={!perms.settings} style={{ border: 0, padding: 0, margin: '0 0 10px', minWidth: 0, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <label>Stakes (ETB, comma separated)<br /><input style={{ ...box, width: 320 }} value={bets} onChange={(e) => setBets(e.target.value)} /></label>
         <label>Turn seconds<br />
           <select style={box} value={turn} onChange={(e) => setTurn(e.target.value)}>{data.turnOptions.map((t) => <option key={t} value={t}>{t}</option>)}</select>
@@ -75,9 +76,9 @@ export default function DamaRooms() {
         <label>Matchmaking wait (s)<br /><input style={{ ...box, width: 90 }} type="number" min="15" max="900" value={wait} onChange={(e) => setWait(e.target.value)} /></label>
         <label><input type="checkbox" checked={majority} onChange={(e) => setMajority(e.target.checked)} /> Majority-capture variant</label>
         <label><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> Game enabled</label>
-        <button className="btn btn-outline" onClick={save}>Save</button>
+        {perms.settings && <button className="btn btn-outline" onClick={save}>Save</button>}
         <span>{msg}</span>
-      </div>
+      </fieldset>
 
       <h3>Waiting &amp; running matches ({data.live.length})</h3>
       <table>
@@ -91,7 +92,7 @@ export default function DamaRooms() {
               <td>{r.players}/2</td>
               <td>{r.pot_total}</td>
               <td>{fmt(r.created_at)}</td>
-              <td><button className="btn btn-outline" onClick={() => voidRoom(r.room_code)}>Void &amp; refund</button></td>
+              <td>{perms.adjust && <button className="btn btn-outline" onClick={() => voidRoom(r.room_code)}>Void &amp; refund</button>}</td>
             </tr>
           ))}
         </tbody>

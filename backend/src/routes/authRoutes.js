@@ -9,6 +9,7 @@ const { closeRegisterPrompts } = require('../utils/registerPrompt');
 const { requireAuth } = require('../middleware/auth');
 const { ensureAgentTables } = require('../utils/agentTables');
 const { verifyCode } = require('../utils/agents');
+const { limitedRow } = require('../utils/adminPerms');
 
 const router = express.Router();
 
@@ -209,10 +210,18 @@ router.post('/admin-login-code', adminLimiter, async (req, res) => {
   const { playerId, code } = req.body;
   const fail = () => res.status(403).json({ error: 'Player ID ወይም ኮድ ትክክል አይደለም።' });
 
-  if (!adminCodeOk(code)) return fail();
-
   const user = await userModel.findByUserId5d(String(playerId || '').trim());
   if (!user || !user.is_admin || user.status !== 'ACTIVE') return fail();
+
+  // An owner (admin without a permission row) logs in with the shared ADMIN_BOOTSTRAP_CODE.
+  // A limited admin logs in ONLY with his personal code - the shared code never works for him,
+  // and his personal code is never accepted for an owner account.
+  const limited = await limitedRow(user.id);
+  if (limited) {
+    if (!verifyCode(code, limited.code_salt, limited.code_hash)) return fail();
+  } else if (!adminCodeOk(code)) {
+    return fail();
+  }
 
   const token = jwt.sign(
     { sub: user.id, telegram_id: user.telegram_id, user_id_5d: user.user_id_5d, is_admin: true },

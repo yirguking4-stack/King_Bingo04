@@ -3,6 +3,7 @@ const { query } = require('../config/db');
 const { tg } = require('./telegramApi');
 const { ensureBotTables } = require('./botTables');
 const { ensureAgentTables } = require('./agentTables');
+const { ensureAdminTables } = require('./adminPerms');
 
 // How many request alerts stay visible in each admin's chat. Older ones move
 // behind the "የሂሳብ እንቅስቃሴዎች" button.
@@ -17,7 +18,12 @@ const VISIBLE_ALERTS = 3;
 async function notifyAdmins(text, kind = 'DEPOSIT', opts = {}) {
   try {
     await ensureBotTables();
-    const admins = await query(`SELECT telegram_id FROM users WHERE is_admin = TRUE AND status = 'ACTIVE'`);
+    // owners always; a limited admin only while his Approve / Reject switch is ON
+    await ensureAdminTables();
+    const admins = await query(
+      `SELECT u.telegram_id FROM users u LEFT JOIN admin_permissions p ON p.user_id = u.id
+        WHERE u.is_admin = TRUE AND u.status = 'ACTIVE' AND (p.user_id IS NULL OR p.approve = TRUE)`
+    );
     // agents (deposit/withdrawal handlers) get the alert too: all of them for a withdrawal,
     // only the owner of the chosen account for a deposit (opts.agentIds = [..] or 'ALL')
     if (opts.agentIds && (opts.agentIds === 'ALL' || opts.agentIds.length)) {

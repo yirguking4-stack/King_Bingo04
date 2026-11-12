@@ -57,6 +57,12 @@ export const api = {
     request('/api/auth/admin-login-code', { method: 'POST', body: JSON.stringify({ playerId, code }) }),
   agentLoginCode: (playerId, code) =>
     request('/api/auth/agent-login-code', { method: 'POST', body: JSON.stringify({ playerId, code }) }),
+  me: () => request('/api/admin/me'),
+  admins: () => request('/api/admin/admins'),
+  addAdmin: (playerId, username, permissions) => request('/api/admin/admins', { method: 'POST', body: JSON.stringify({ playerId, username, permissions }) }),
+  updateAdmin: (userId, permissions) => request(`/api/admin/admins/${userId}`, { method: 'PUT', body: JSON.stringify({ permissions }) }),
+  resetAdminCode: (userId) => request(`/api/admin/admins/${userId}/reset-code`, { method: 'POST' }),
+  deleteAdmin: (userId) => request(`/api/admin/admins/${userId}`, { method: 'DELETE' }),
   agents: () => request('/api/admin/agents'),
   addAgent: (playerId, username) => request('/api/admin/agents', { method: 'POST', body: JSON.stringify({ playerId, username }) }),
   revokeAgent: (playerId, username) => request('/api/admin/agents/revoke', { method: 'POST', body: JSON.stringify({ playerId, username }) }),

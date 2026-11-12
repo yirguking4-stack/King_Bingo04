@@ -1,6 +1,6 @@
 'use strict';
 const express = require('express');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePerm } = require('../middleware/auth');
 const { manager, DamaError, COMMISSION_PERCENT, payoutFor, TURN_OPTIONS } = require('./damaManager');
 
 // per-user limiter for the money-moving endpoints
@@ -128,7 +128,7 @@ router.post('/rooms/:code/cancel', limit, async (req, res) => {
 // ---- admin: /api/admin/dama/* ----
 const admin = express.Router();
 admin.use(requireAuth, requireAdmin);
-admin.get('/overview', async (req, res) => {
+admin.get('/overview', requirePerm('games'), async (req, res) => {
   try {
     await manager.init();
     res.json({ ...(await manager.adminOverview()), turnOptions: TURN_OPTIONS });
@@ -136,7 +136,7 @@ admin.get('/overview', async (req, res) => {
     fail(res, e);
   }
 });
-admin.put('/config', async (req, res) => {
+admin.put('/config', requirePerm('settings'), async (req, res) => {
   try {
     await manager.init();
     res.json(await manager.saveSettings(req.user.id, req.body || {}));
@@ -144,7 +144,8 @@ admin.put('/config', async (req, res) => {
     fail(res, e);
   }
 });
-admin.post('/rooms/:code/void', async (req, res) => {
+// voiding a match REFUNDS every player's stake, so it needs the Adjust (balance) switch
+admin.post('/rooms/:code/void', requirePerm('adjust'), async (req, res) => {
   try {
     await manager.init();
     await manager.adminVoid(req.user.id, String(req.params.code).toUpperCase(), String((req.body || {}).reason || '').slice(0, 300));

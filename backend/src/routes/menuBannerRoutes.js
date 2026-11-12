@@ -1,12 +1,12 @@
 'use strict';
 const express = require('express');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePerm } = require('../middleware/auth');
 const { query } = require('../config/db');
 const { ensureMenuBannerTable, detectMime, getBanner } = require('../utils/menuBanner');
 
 // ---- admin: /api/admin/menu-banner ----
 const admin = express.Router();
-admin.use(requireAuth, requireAdmin);
+admin.use(requireAuth, requireAdmin, requirePerm('settings'));
 
 admin.get('/', async (req, res) => {
   try {

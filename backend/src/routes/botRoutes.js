@@ -88,7 +88,8 @@ router.get('/admin-alerts', async (req, res) => {
   const telegramId = req.query.telegramId;
   const page = Math.max(0, parseInt(req.query.page, 10) || 0);
   const admin = await userModel.findByTelegramId(telegramId);
-  let allowed = Boolean(admin) && admin.status === 'ACTIVE' && admin.is_admin === true;
+  // an admin needs the Approve / Reject switch (owners always have it)
+  let allowed = Boolean(admin) && admin.status === 'ACTIVE' && admin.is_admin === true && (await require('../utils/adminPerms').adminCan(admin, 'approve'));
   if (!allowed && admin && admin.status === 'ACTIVE') allowed = Boolean(await require('../utils/agents').activeAgentOf(admin.id));
   if (!allowed) {
     return res.status(403).json({ error: 'Not an admin' });

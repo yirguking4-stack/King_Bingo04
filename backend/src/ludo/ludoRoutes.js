@@ -1,6 +1,6 @@
 'use strict';
 const express = require('express');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePerm } = require('../middleware/auth');
 const { manager, LudoError, BETS, CROWNS, CAPACITIES, COMMISSION_PERCENT, WAIT_MS } = require('./ludoManager');
 const E = require('./ludoEngine');
 
@@ -97,7 +97,7 @@ router.post('/rooms/:code/leave', limit, async (req, res) => {
 
 // ---- admin (existing admin auth) : GET /api/admin/ludo/overview ----
 const admin = express.Router();
-admin.use(requireAuth, requireAdmin);
+admin.use(requireAuth, requireAdmin, requirePerm('games'));
 admin.get('/overview', async (req, res) => {
   try {
     res.json(await manager.adminOverview());
