@@ -1,7 +1,7 @@
 const express = require('express');
 const { query } = require('../config/db');
 const { requireAuth, requireAdmin, requirePerm } = require('../middleware/auth');
-const { adminAccess } = require('../utils/adminPerms');
+const { adminAccess, PERMISSIONS } = require('../utils/adminPerms');
 const walletModel = require('../models/walletModel');
 const userModel = require('../models/userModel');
 const { ensureProofTable } = require('../utils/botTables');
@@ -16,7 +16,14 @@ const { notifyReviewResult } = require('../utils/balanceNotify');
 const admin = express.Router();
 admin.use(requireAuth, requireAdmin, requirePerm('settings')); // agents are managed on the Settings page
 
+// an agent saved before the switches existed = Approve / Reject only. Only the OWNER can change the switches
+const agentPerms = (raw) => {
+  const base = raw && typeof raw === 'object' ? raw : { approve: true };
+  return Object.fromEntries(PERMISSIONS.map((p) => [p, base[p] === true]));
+};
+
 const publicAgent = (r) => ({
+  permissions: agentPerms(r.permissions),
   id: r.id,
   userId5d: r.user_id_5d,
   username: r.username,
@@ -84,9 +91,10 @@ admin.put('/:id', async (req, res) => {
   if (cbeNumber && !/^[0-9]{6,20}$/.test(cbeNumber)) return res.status(400).json({ error: 'CBE account number must be 6-20 digits' });
 
   const r = await query(
-    `UPDATE agents SET active = $2, telebirr_name = $3, telebirr_phone = $4, cbe_name = $5, cbe_number = $6, updated_at = now()
+    `UPDATE agents SET active = $2, telebirr_name = $3, telebirr_phone = $4, cbe_name = $5, cbe_number = $6, permissions = COALESCE($7::jsonb, permissions), updated_at = now()
      WHERE id = $1 RETURNING id`,
-    [id, b.active !== false, String(b.telebirrName || '').trim().slice(0, 80) || null, telebirrPhone, String(b.cbeName || '').trim().slice(0, 80) || null, cbeNumber || null]
+    [id, b.active !== false, String(b.telebirrName || '').trim().slice(0, 80) || null, telebirrPhone, String(b.cbeName || '').trim().slice(0, 80) || null, cbeNumber || null,
+      req.adminAccess && req.adminAccess.owner && b.permissions && typeof b.permissions === 'object' ? JSON.stringify(Object.fromEntries(PERMISSIONS.map((p) => [p, b.permissions[p] === true]))) : null]
   );
   if (!r.rowCount) return res.status(404).json({ error: 'Agent not found' });
   await audit(req.user.id, 'AGENT_UPDATED', id, { active: b.active !== false });
@@ -149,6 +157,8 @@ async function requireStaff(req, res, next) {
     await ensureAgentTables();
     const r = await query('SELECT id FROM agents WHERE user_id = $1 AND active = TRUE', [req.user.id]);
     if (!r.rowCount) return res.status(403).json({ error: 'Agent access required' });
+    const ag = await adminAccess(req.user);
+    if (!ag.perms.approve) return res.status(403).json({ error: 'ይህን ለማድረግ ፈቃድ የለዎትም። (No permission for this action)' });
     req.staff = { role: 'agent', agentId: r.rows[0].id };
     return next();
   } catch (err) {
@@ -171,7 +181,9 @@ async function staffOf(user) {
   }
   await ensureAgentTables();
   const r = await query('SELECT id FROM agents WHERE user_id = $1 AND active = TRUE', [user.id]);
-  return r.rowCount ? { role: 'agent', agentId: r.rows[0].id } : null;
+  if (!r.rowCount) return null;
+  const ag = await adminAccess(user);
+  return ag.perms.approve ? { role: 'agent', agentId: r.rows[0].id } : null; // switch OFF = no access
 }
 
 /** May this staff member see / review this transaction? (deposit/withdrawal only - nothing else) */

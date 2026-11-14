@@ -31,7 +31,7 @@ async function notifyAdmins(text, kind = 'DEPOSIT', opts = {}) {
         await ensureAgentTables();
         const ag = await query(
           `SELECT u.telegram_id FROM agents a JOIN users u ON u.id = a.user_id
-            WHERE a.active = TRUE AND u.status = 'ACTIVE' AND ($1::text = 'ALL' OR a.id = ANY($2::int[]))`,
+            WHERE a.active = TRUE AND u.status = 'ACTIVE' AND COALESCE((a.permissions->>'approve')::boolean, TRUE) AND ($1::text = 'ALL' OR a.id = ANY($2::int[]))`,
           [opts.agentIds === 'ALL' ? 'ALL' : 'LIST', opts.agentIds === 'ALL' ? [] : opts.agentIds]
         );
         const have = new Set(admins.rows.map((r) => String(r.telegram_id)));

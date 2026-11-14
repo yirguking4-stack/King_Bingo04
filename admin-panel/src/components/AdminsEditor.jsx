@@ -23,7 +23,7 @@ function Switch({ checked, onChange, disabled }) {
   );
 }
 
-function PermissionList({ value, onChange, disabled }) {
+export function PermissionList({ value, onChange, disabled }) {
   return (
     <div className="perm-list">
       {PERMISSION_LIST.map((p) => (

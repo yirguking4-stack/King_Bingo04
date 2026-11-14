@@ -34,6 +34,7 @@ function ensureAgentTables() {
           method         VARCHAR(10) NOT NULL
         )`);
       await query('CREATE INDEX IF NOT EXISTS deposit_routing_agent_idx ON deposit_routing (agent_id)');
+      await query('ALTER TABLE agents ADD COLUMN IF NOT EXISTS permissions JSONB');
     })().catch((err) => {
       ready = null;
       throw err;

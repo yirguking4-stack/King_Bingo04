@@ -12,8 +12,9 @@ import Settings from './pages/Settings';
 import Admins from './pages/Admins';
 
 // `show(access)` decides who sees the page. access = { owner, permissions: { adjust, suspend, approve, games, audit, settings } }
+// Admins AND Agents are treated the same way: only the switches the owner turned ON open a page.
 const NAV = [
-  { key: 'dashboard', label: 'Dashboard', show: () => true },
+  { key: 'dashboard', label: 'Dashboard', show: (a) => a.owner },
   { key: 'users', label: 'Players', show: (a) => a.permissions.adjust || a.permissions.suspend },
   { key: 'transactions', label: 'Transactions', show: (a) => a.permissions.approve },
   { key: 'rooms', label: 'King Bingo', show: (a) => a.permissions.games },
@@ -27,15 +28,36 @@ const NAV = [
 export default function App() {
   const [authed, setAuthed] = useState(isAuthenticated());
   const isAgent = getRole() === 'agent';
-  const [page, setPage] = useState(isAgent ? 'transactions' : 'dashboard');
+  const [page, setPage] = useState(null);
   const [access, setAccess] = useState(null);
   const [accessError, setAccessError] = useState(null);
 
-  // what this admin may do (agents only ever get the Transactions page)
+  // what this person may do - asked again every 15 s and when the tab gets focus, so a switch the owner
+  // turns ON / OFF changes the menu without logging in again
   useEffect(() => {
-    if (!authed || isAgent) return;
-    api.me().then(setAccess).catch((e) => setAccessError(e.message));
-  }, [authed, isAgent]);
+    if (!authed) return undefined;
+    let alive = true;
+    const load = () =>
+      api
+        .me()
+        .then((a) => {
+          if (alive) {
+            setAccess(a);
+            setAccessError(null);
+          }
+        })
+        .catch((e) => {
+          if (alive) setAccessError(e.message);
+        });
+    load();
+    const t = setInterval(load, 15000);
+    window.addEventListener('focus', load);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      window.removeEventListener('focus', load);
+    };
+  }, [authed]);
 
   if (!authed) {
     return <Login onLoggedIn={() => setAuthed(true)} />;
@@ -47,10 +69,9 @@ export default function App() {
     setAuthed(false);
   }
 
-  const effective = isAgent ? { owner: false, permissions: { approve: true } } : access;
-  const nav = effective ? (isAgent ? NAV.filter((n) => n.key === 'transactions') : NAV.filter((n) => n.show(effective))) : [];
+  const nav = access ? NAV.filter((n) => n.show(access)) : [];
   const current = nav.some((n) => n.key === page) ? page : nav[0] && nav[0].key;
-  const perms = (effective && effective.permissions) || {};
+  const perms = (access && access.permissions) || {};
 
   return (
     <div className="admin-shell">
@@ -67,16 +88,17 @@ export default function App() {
         <button onClick={logout}>Log out</button>
       </aside>
       <main className="main">
-        {!effective && <p>{accessError || 'Loading…'}</p>}
-        {effective && current === 'dashboard' && <Dashboard />}
-        {effective && current === 'users' && <Users perms={perms} />}
-        {effective && current === 'transactions' && <Transactions />}
-        {effective && current === 'rooms' && <Rooms />}
-        {effective && current === 'ludo' && <LudoRooms />}
-        {effective && current === 'dama' && <DamaRooms perms={perms} />}
-        {effective && current === 'audit' && <AuditLogs />}
-        {effective && current === 'settings' && <Settings />}
-        {effective && current === 'admins' && <Admins />}
+        {!access && <p>{accessError || 'Loading…'}</p>}
+        {access && !current && <p>ምንም ፈቃድ አልተሰጠዎትም። ባለቤቱን (Owner) ያነጋግሩ። (No permission has been given to you.)</p>}
+        {access && current === 'dashboard' && <Dashboard />}
+        {access && current === 'users' && <Users perms={perms} />}
+        {access && current === 'transactions' && <Transactions />}
+        {access && current === 'rooms' && <Rooms />}
+        {access && current === 'ludo' && <LudoRooms />}
+        {access && current === 'dama' && <DamaRooms perms={perms} />}
+        {access && current === 'audit' && <AuditLogs />}
+        {access && current === 'settings' && <Settings />}
+        {access && current === 'admins' && <Admins />}
       </main>
     </div>
   );

@@ -36,11 +36,17 @@ async function requireAuth(req, res, next) {
 /**
  * Requires req.user.is_admin === true. Must run after requireAuth.
  */
-function requireAdmin(req, res, next) {
-  if (!req.user || !req.user.is_admin) {
+async function requireAdmin(req, res, next) {
+  try {
+    if (req.user && req.user.is_admin) return next();
+    // an ACTIVE agent may enter too - what he may DO is decided by requirePerm / requireOwner (his switches)
+    const a = req.user ? await adminAccess(req.user) : null;
+    if (a && a.admin) return next();
     return res.status(403).json({ error: 'Admin access required' });
+  } catch (err) {
+    console.error('[auth] admin check failed:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  next();
 }
 
 /**
@@ -78,4 +84,10 @@ async function requireOwner(req, res, next) {
   }
 }
 
-module.exports = { requireAuth, requireAdmin, requirePerm, requireOwner };
+/** An agent works on his OWN deposit / withdrawal list (/api/agent) - never through the owner-wide transaction endpoints. */
+function noAgent(req, res, next) {
+  if (req.adminAccess && req.adminAccess.agent) return res.status(403).json({ error: 'ይህን ለማድረግ ፈቃድ የለዎትም። (No permission for this action)' });
+  return next();
+}
+
+module.exports = { requireAuth, requireAdmin, requirePerm, requireOwner, noAgent };

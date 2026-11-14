@@ -1,6 +1,6 @@
 const express = require('express');
 const { query } = require('../config/db');
-const { requireAuth, requireAdmin, requirePerm } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePerm, requireOwner, noAgent } = require('../middleware/auth');
 const { adminAccess } = require('../utils/adminPerms');
 const walletModel = require('../models/walletModel');
 const { ensureProofTable, ensureCbeTable } = require('../utils/botTables');
@@ -17,7 +17,7 @@ router.get('/me', async (req, res) => {
 });
 
 // ---- Dashboard (every admin) ----
-router.get('/dashboard', async (req, res) => {
+router.get('/dashboard', requireOwner, async (req, res) => {
   const [users, pendingTx, roomsToday, creditsInCirculation] = await Promise.all([
     query('SELECT COUNT(*) FROM users'),
     query(`SELECT COUNT(*) FROM transactions WHERE status = 'PENDING'`),
@@ -130,7 +130,7 @@ router.post('/users/:id/adjust-balance', requirePerm('adjust'), async (req, res)
 });
 
 // ---- Transactions (deposit/withdrawal approval workflow) ----
-router.get('/transactions', requirePerm('approve'), async (req, res) => {
+router.get('/transactions', requirePerm('approve'), noAgent, async (req, res) => {
   const { status, type } = req.query;
   await Promise.all([ensureProofTable(), ensureAgentTables()]);
   let sql = `SELECT t.*, u.user_id_5d, u.username,
@@ -156,7 +156,7 @@ router.get('/transactions', requirePerm('approve'), async (req, res) => {
 });
 
 // the screenshot a player attached to a deposit request
-router.get('/transactions/:id/proof', requirePerm('approve'), async (req, res) => {
+router.get('/transactions/:id/proof', requirePerm('approve'), noAgent, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
   await ensureProofTable();
@@ -167,7 +167,7 @@ router.get('/transactions/:id/proof', requirePerm('approve'), async (req, res) =
   res.send(r.rows[0].data);
 });
 
-router.post('/transactions/:id/review', requirePerm('approve'), async (req, res) => {
+router.post('/transactions/:id/review', requirePerm('approve'), noAgent, async (req, res) => {
   const { decision } = req.body; // 'APPROVED' | 'REJECTED'
   try {
     // a limited admin may not approve his own request (the owner is not restricted)

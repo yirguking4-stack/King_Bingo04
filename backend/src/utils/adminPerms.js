@@ -1,4 +1,5 @@
 const { query } = require('../config/db');
+const { ensureAgentTables } = require('./agentTables');
 
 /**
  * Per-admin permissions.
@@ -62,9 +63,18 @@ function permsOf(row) {
  * Checked against the database on every call, so switching a permission off (or removing the admin) is immediate.
  */
 async function adminAccess(user) {
-  if (!user || !user.is_admin || user.status !== 'ACTIVE') return { admin: false, owner: false, perms: permsOf({}) };
-  const row = await limitedRow(user.id);
-  return { admin: true, owner: !row, perms: permsOf(row) };
+  const none = { admin: false, owner: false, agent: false, perms: permsOf({}) };
+  if (!user || user.status !== 'ACTIVE') return none;
+  if (user.is_admin) {
+    const row = await limitedRow(user.id);
+    return { admin: true, owner: !row, agent: false, perms: permsOf(row) };
+  }
+  // an ACTIVE agent: only the switches the owner turned ON (an agent saved before this feature = Approve / Reject only)
+  await ensureAgentTables();
+  const r = await query('SELECT permissions FROM agents WHERE user_id = $1 AND active = TRUE', [user.id]);
+  if (!r.rowCount) return none;
+  const raw = r.rows[0].permissions;
+  return { admin: true, owner: false, agent: true, perms: permsOf(raw && typeof raw === 'object' ? raw : { approve: true }) };
 }
 
 async function adminCan(user, perm) {

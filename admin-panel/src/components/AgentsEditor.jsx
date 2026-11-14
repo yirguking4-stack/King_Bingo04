@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { PermissionList } from './AdminsEditor';
 
 const inputStyle = { flex: 1, minWidth: 140, padding: 8, border: '1px solid var(--admin-border)', borderRadius: 8 };
 
@@ -68,7 +69,9 @@ function AgentCard({ agent, onChanged, onCode, onError }) {
         <input style={inputStyle} placeholder="CBE account name" value={f.cbeName} onChange={(e) => set('cbeName', e.target.value)} />
         <input style={inputStyle} placeholder="CBE account number (1000…)" inputMode="numeric" value={f.cbeNumber} onChange={(e) => set('cbeNumber', e.target.value.replace(/[^0-9]/g, ''))} />
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="stat-label" style={{ margin: '4px 0 6px' }}>What this agent may do — everything OFF is blocked</div>
+      <PermissionList value={f.permissions || {}} onChange={(p) => set('permissions', p)} />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
         <button className="btn btn-approve" onClick={save}>Save</button>
         <button className="btn btn-outline" onClick={newCode}>New code</button>
         <button className="btn btn-outline" onClick={remove}>Remove</button>

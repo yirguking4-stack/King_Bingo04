@@ -56,7 +56,12 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Player ID እና Username አይዛመዱም። ሁለቱንም በትክክል ያስገቡ።' });
   }
   if (user.status !== 'ACTIVE') return res.status(400).json({ error: 'ይህ አካውንት ንቁ አይደለም።' });
-  if (user.is_admin) return res.status(409).json({ error: 'ይህ ሰው አስቀድሞ Admin ነው።' });
+  if (user.is_admin) {
+    // an existing full-access admin (owner) can be limited here - but never yourself
+    if (String(user.id) === String(req.user.id)) return res.status(400).json({ error: 'ራስዎን መገደብ አይችሉም።' });
+    const already = await query('SELECT 1 FROM admin_permissions WHERE user_id = $1', [user.id]);
+    if (already.rowCount) return res.status(409).json({ error: 'ይህ ሰው አስቀድሞ ገደብ ያለው Admin ነው። ማብሪያዎቹን ከዝርዝሩ ያስተካክሉ።' });
+  }
   const isAgent = await query('SELECT 1 FROM agents WHERE user_id = $1', [user.id]);
   if (isAgent.rowCount) return res.status(409).json({ error: 'ይህ ተጫዋች Agent ነው። መጀመሪያ ከ Agent ዝርዝር ያስወግዱት።' });
 
